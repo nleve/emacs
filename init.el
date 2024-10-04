@@ -12,8 +12,11 @@
 (tool-bar-mode -1)
 
 ; Smooth scroll
-(pixel-scroll-mode 1)
 (pixel-scroll-precision-mode 1)
+
+; Disable annoying sounds
+(setq visible-bell t)
+(setq ring-bell-function 'ignore)
 
 ; Performance tweaks
 (setq gc-cons-threshold 100000000)
@@ -24,7 +27,7 @@
 (prefer-coding-system 'utf-8)
 
 ;; Font
-(set-frame-font "Hack-12" nil t)
+(set-frame-font (font-spec :family "JetBrainsMono Nerd Font" :size 15) nil t)
 
 ;; Global keybinds
 (global-set-key (kbd "M-l") 'evil-window-right)
@@ -51,8 +54,8 @@
 ;; Theme & Appearance
 (use-package doom-themes
   :init
-  ;(load-theme 'doom-dark+ t))
-  (load-theme 'doom-dracula t))
+  (load-theme 'doom-tokyo-night t))
+
 
 (use-package all-the-icons :defer)
 
@@ -60,7 +63,7 @@
 (use-package smooth-scrolling
   :custom
   (smooth-scrolling-mode 1)
-  (smooth-scroll-margin 4))
+  (smooth-scroll-margin 6))
 
 ;; Env vars
 (use-package exec-path-from-shell
@@ -71,6 +74,13 @@
 
 ;; Fix indentation
 (use-package dtrt-indent :ensure)
+
+;; Add padding to make everything look more comfy
+(use-package spacious-padding
+  :ensure
+  :init
+  (spacious-padding-mode)
+  )
 
 ;; Evil
 (use-package evil
@@ -94,6 +104,7 @@
   (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
   (define-key evil-normal-state-map (kbd "g ]") 'xref-go-forward)
   (define-key evil-normal-state-map (kbd "g [") 'xref-go-back)
+
   ;; Add some quick fwd / bad keys
   (enable-smooth-scroll-for-function evil-next-visual-line)
   (enable-smooth-scroll-for-function evil-previous-visual-line)
@@ -124,26 +135,12 @@
   :diminish
   :init
   (global-company-mode)
+  :bind (
+	 ("C-<return>" . company-manual-begin))
   :custom
-  (company-idle-delay 0.1)
+  (company-idle-delay nil)
   (company-tooltip-align-annotations 't)
   (company-minimum-prefix-length 1))
-
-(use-package ivy
-  :defer
-  :diminish
-  :init
-  (ivy-mode 1)
-  :custom
-  (ivy-initial-inputs-alist nil)
-  :config
-  ;(define-key ivy-minibuffer-map (kbd "C-k") #'ivy-previous-line)
-  ;(define-key ivy-minibuffer-map (kbd "C-j") #'ivy-next-line)
-  ;(define-key ivy-switch-buffer-map (kbd "C-k") #'ivy-previous-line)
-  ;(define-key ivy-switch-buffer-map (kbd "C-j") #'ivy-next-line)
-)
-
-(use-package counsel :diminish :defer)
 
 ;; Which Key
 (use-package which-key
@@ -151,17 +148,14 @@
   :init
   (which-key-mode 1)
   :custom
-  (which-key-idle-delay 0.1)
+  (which-key-idle-delay 0)
   (which-key-separator ":")
   (which-key-prefix-prefix "+"))
 
 ;; Language-specific Modes
-(use-package graphviz-dot-mode :defer)
-
 (use-package zig-mode
   :defer
   :mode "\\.zig\\'"
-  :hook (lsp-deferred)
   :ensure
 )
 
@@ -187,30 +181,13 @@
 	 ("C-c c a" . eglot-code-actions)
 	 ("C-c c o" . eglot-code-actions-organize-imports)
 	 ("C-c c r" . eglot-rename)
-	 ("C-c c f" . eglot-format)))
+	 ("C-c c f" . eglot-format))
+  )
 
-;; LSP and DAP
-;; (use-package lsp-mode
-;;   :ensure
-;;   :custom
-;;   (lsp-clients-clangd-args '("-j=8" "--malloc-trim" "--background-index" "--pch-storage=memory"))
-;;   (lsp-idle-delay 0.5)
-;;   (lsp-keep-workspace-alive nil)
-;;   (lsp-warn-no-matched-clients nil)
-;;   (lsp-headerline-breadcrumb-enable-diagnostics nil))
-;; (use-package lsp-ui :ensure :defer)
-;; (use-package lsp-ivy :ensure :defer)
-;; (use-package treemacs :ensure :defer)
-;; (use-package lsp-treemacs :ensure :defer)
-;; (use-package dap-mode :ensure :defer)
+;; used once in a while for file nav
+(use-package treemacs :ensure :defer)
 
-;; (defun add-lsp-hook-to-ts-modes ()
-;;   "Hook into each treesitter mode and also start lsp-mode."
-;;   (dolist (mode global-treesit-auto-modes)
-;;     (add-hook (intern (concat (symbol-name mode) "-hook"))
-;;               #'lsp-deferred)))
-;; (add-lsp-hook-to-ts-modes)
-
+;; tell me what's wrong
 (use-package flycheck
   :ensure
   :hook (prog-mode . flycheck-mode)
@@ -224,7 +201,7 @@
 ;; General keymap
 (use-package general
   :after evil
-  :config 
+  :config
   (general-evil-setup t)
   (setq general-override-states '(insert
                                   emacs
@@ -266,30 +243,12 @@
    "b"   '(:ignore t :wk "buffers")
    "bX"  '(kill-buffer-and-window :wk "kill buffer / window")
    "bx"  '(kill-buffer :wk "kill buffer")
-   "bb"  '(ivy-switch-buffer :wk "switch buffer")
+   "bb"  '(ido-switch-buffer :wk "switch buffer")
    "bm"  '(buffer-menu :wk "buffer menu")
    "bi"  '(ibuffer :wk "ibuffer")
    "bn"  '(next-buffer :wk "next buffer")
    "bp"  '(previous-buffer :wk "previous buffer")
    "TAB" '(switch-to-prev-buffer :wk "previous buffer")
-   ; Projectile
-   "p"   '(:ignore t :wk "projectile")
-   "ps"  '(projectile-switch-project :wk "switch project")
-   "pi"  '(projectile-ibuffer :wk "ibuffer")
-   "pb"  '(projectile-switch-to-buffer :wk "switch buffer")
-   "pn"  '(projectile-next-project-buffer :wk "next buffer")
-   "pp"  '(projectile-previous-project-buffer :wk "prev buffer")
-   "pd"  '(projectile-dired :wk "dired")
-   "pf"  '(project-find-file :wk "find file")
-   "pm"  '(:ignore t :wk "manage projects")
-   "pmc" '(projectile-configure-project :wk "configure project")
-   "pma" '(projectile-add-known-project :wk "add known project")
-   "pmr" '(projectile-remove-known-project :wk "remove known project")
-   "pt"  '(:ignore t :wk "tests")
-   "ptr"  '(projectile-test-project :wk "run project tests")
-   "ptf"  '(projectile-find-test-file :wk "find test file")
-   "ptt"  '(projectile-toggle-between-implementation-and-test :wk "toggle test")
-   "pr"  '(projectile-run-project :wk "run project")
    ;; Window
    "w"   '(:ignore t :wk "window")
    "w/"  '(split-window-right :wk "split right")
@@ -336,7 +295,8 @@
    "a"    '(ace-select-window t :wk "ace")
    ;; Help
    "h"    '(:ignore t :wk "help and errors")
-   "hh"   '(display-local-help :wk "display-local-help")
+   "hh"   '(eldoc-box-help-at-point :wk "eldoc box help at point")
+   "hl"   '(display-local-help :wk "display-local-help")
    "ho"   '(describe-package :wk "describe-package")
    "hf"   '(describe-function :wk "describe-function")
    "hs"   '(describe-symbol :wk "describe-symbol")
@@ -350,6 +310,14 @@
    "oc"   '(obsidian-capture :wk "capture")
    "os"   '(obsidian-search :wk "search")
    "ot"   '(obsidian-tag-find :wk "find tag")
+   ;; Search
+   "/"    '(:ignore t :wk "consult")
+   "//"   '(consult-line :wk "line")
+   "/r"   '(consult-ripgrep :wk "ripgrep")
+   "/f"   '(consult-fd :wk "file")
+   "/o"   '(consult-outline :wk "outline")
+   "/b"   '(consult-buffer :wk "buffer")
+   "/t"   '(consult-theme :wk "theme")
    ;; Other
    "i"   '((lambda () (interactive)(find-file "~/.config/emacs/init.el")) :wk "edit init.el")
    "y"   '(vterm :wk "open terminal")
@@ -361,10 +329,15 @@
 
 ;; Navigation
 (use-package avy
+  :ensure
   :defer
-  :diminish)
+  :diminish
+  :custom
+  (avy-timeout-seconds 0.2)
+  )
 
 (use-package ace-window
+  :ensure
   :defer
   :diminish
   :custom
@@ -375,14 +348,6 @@
   (eyebrowse-mode)
   :custom
   (eyebrowse-new-workspace t))
-
-;; Project management
-(use-package projectile
-  :defer)
-
-;; LLM-related
-(use-package llm
-  :defer)
 
 ;; Term
 (use-package vterm
@@ -423,6 +388,57 @@
   (setq doom-modeline-minor-modes 1)
   (doom-modeline-mode 1)
   )
+
+;; Better minibuffer that shows completion candidates
+(use-package vertico
+  :ensure
+  :config
+  (setq vertico-cycle t)
+  (setq vertico-resize t)
+  :init
+  (vertico-mode 1)
+  )
+
+;; show marginalia for minibuffer completions
+(use-package marginalia
+  :ensure
+  :config
+  (marginalia-mode 1))
+
+;; out-of-order fuzzy matching / completion
+(use-package orderless
+  :ensure
+  :config
+  (setq completion-styles '(orderless basic))
+  )
+
+;; enhanced versions of built-in functionality such as search
+(use-package consult
+  :ensure)
+
+;; consult integration with project.el
+(use-package consult-project-extra
+  :ensure)
+
+;; consult integration with eglot
+(use-package consult-eglot
+  :ensure)
+
+;; Perform actions!
+(use-package embark
+  :ensure
+  :bind (("C-," . embark-act)
+	 :map minibuffer-local-map
+	 ("C-c C-c" . embark-collect)
+	 ("C-c C-e" . embark-export))
+  )
+
+;; embark integration with consult
+(use-package embark-consult
+  :ensure)
+
+;; Markdown customization
+(setq markdown-fontify-code-blocks-natively t)
 
 ;;; Manually customized variables
 (setq scroll-preserve-screen-position 1) ; fix scrolling?
