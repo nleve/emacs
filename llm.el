@@ -59,6 +59,17 @@
       :key (getenv "OPENROUTER_KEY")
       :models n/gptel-openrouter-models))
 
+  (defvar n/gptel-llamacpp
+    (gptel-make-openai "llamacpp"
+      :host ("192.168.1.160:8000")
+      :protocol "http"
+      :endpoint "/v1/chat/completions"
+      :stream t
+      :key ("asdf")
+      :models '((Qwen3-32B :capabilities (nosystem tool-use reasoning))
+		)
+    )
+
   (setq gptel-temperature nil) ; do not override any temperature settings on the backend!!
   
   (setopt gptel-model 'QwQ-32B-exl2-6bpw-6hb
