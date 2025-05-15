@@ -665,7 +665,7 @@ w")
 ;; Function to quit frame on Esc
 (defun my-eldoc-box-quit-on-esc (&rest _)
   "Quit the eldoc-box frame if `eldoc-box-clear-with-esc' is non-nil."
-  (when eldoc-box-clear-with-esc
+  (when (fboundp 'eldoc-box-quit-frame)
     (eldoc-box-quit-frame)))
 
 ;; Advise evil-force-normal-state instead of keyboard-escape-quit
