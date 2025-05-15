@@ -3,27 +3,66 @@
 ;
 ; This is my init.el.  There are many like it, but this one is mine.
 ;
+;;; Code:
+(toggle-scroll-bar -1)
 
+(setq shell-command-switch "-ic")
 (setq custom-file "~/.config/emacs/custom.el")
 
-; Make it minimal-looking.
-(menu-bar-mode -1)
-(toggle-scroll-bar -1)
-(tool-bar-mode -1)
-(tab-bar-mode 1)
+;; Load auto-customized vars & faces
+(load custom-file)
 
-;; vsync fix
-(add-to-list 'default-frame-alist '(inhibit-double-buffering . t))
+;; eliminate gc stutter. incredible
+(use-package gcmh :ensure :diminish
+  :config
+  (setq gcmh-idle-delay 3)
+  :init
+  (gcmh-mode))
+
+;; Font
+;(set-frame-font (font-spec :family "JetBrainsMono Nerd Font" :size 14) nil t)
+;(set-frame-font (font-spec :family "Hack" :size 15) nil t)
+;(set-frame-font (font-spec :family "Iosevka Nerd Font" :size 17) nil t)
+;(set-frame-font (font-spec :family "Source Code Pro" :size 14) nil t)
+(defvar my/fixed-font-spec '(:family "JetBrainsMono Nerd Font" :size 15))
+(defvar my/variable-font-spec '(:family "Noto Sans" :size 16 :weight light))
+(set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
+(set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
+(set-face-attribute 'variable-pitch nil :font (apply #'font-spec my/variable-font-spec))
+
+ (custom-theme-set-faces
+   'user
+   `(variable-pitch ((t ,my/variable-font-spec)))
+   `(org-default ((t ,my/variable-font-spec)))
+   `(fixed-pitch ((t ,my/fixed-font-spec)))
+   `(default ((t ,my/fixed-font-spec)))
+   )
+
+(dolist (face '(default fixed-pitch))
+  (set-face-attribute `,face nil :font (apply #'font-spec my/fixed-font-spec)))
 
 ; Turn on some things I like.
 (add-hook 'prog-mode-hook 'display-line-numbers-mode)
-;(add-hook 'prog-mode-hook 'hl-line-mode)
+(add-hook 'prog-mode-hook 'hl-line-mode)
 
 ; fix silly defaults
 (setopt sentence-end-double-space nil)
-(blink-cursor-mode -1)
-(setq visible-bell t)
-(setq ring-bell-function 'ignore)
+
+;; TODO use something like this to switch common modes quick
+;; (defvar-keymap prot-prefix-mode-map
+;;   :doc "Prefix keymap for minor mode toggles."
+;;   :name "Toggle"
+;;   :prefix 'prot-prefix-mode
+;;   "f" #'flymake-mode
+;;   "h" #'hl-line-mode
+;;   "k" #'keycast-mode-line-mode
+;;   "l" #'logos-focus-mode
+;;   "m" #'menu-bar-mode
+;;   "n" #'display-line-numbers-mode
+;;   "t" #'toggle-truncate-lines
+;;   "s" #'spacious-padding-mode
+;;   "r" #'rainbow-mode
+;;   "v" #'variable-pitch-mode)
 
 ; turn off middle-click paste
 (global-unset-key [mouse-2])
@@ -31,30 +70,24 @@
 (global-set-key [mouse-3] 'eglot-code-actions-at-mouse)
 (global-set-key [down-mouse-3] 'mouse-drag-drag)
 
-; Performance tweaks
-(setq gc-cons-threshold 100000000)
-(setq read-process-output-max (* 1024 1024)) ;; 1mb
-(setq max-lisp-eval-depth 10000)
-
 ;; UTF-8 files by default
 (prefer-coding-system 'utf-8)
-
-;; Font
-;(set-frame-font (font-spec :family "JetBrainsMono Nerd Font" :size 15) nil t)
-(set-frame-font (font-spec :family "Iosevka Nerd Font" :size 17) nil t)
+(set-default-coding-systems 'utf-8)
+(set-language-environment 'utf-8)
+(set-selection-coding-system 'utf-8)
 
 ; Eldoc tweaks
 ;(setq eldoc-echo-area-display-truncation-message nil)
 ;(setq eldoc-echo-area-use-multiline-p nil)
-;(setq eldoc-display-functions '(eldoc-display-in-echo-area eldoc-display-in-buffer))
 (setq eldoc-display-functions '(eldoc-display-in-buffer))
+;(setq eldoc-display-functions '(eldoc-display-in-buffer))
 (setq eldoc-idle-delay 0.1)
 
 ;; Global keybinds
-(global-set-key (kbd "M-l") 'evil-window-right)
-(global-set-key (kbd "M-h") 'evil-window-left)
-(global-set-key (kbd "M-j") 'evil-window-down)
-(global-set-key (kbd "M-k") 'evil-window-up)
+(global-set-key (kbd "s-l") 'evil-window-right)
+(global-set-key (kbd "s-h") 'evil-window-left)
+(global-set-key (kbd "s-j") 'evil-window-down)
+(global-set-key (kbd "s-k") 'evil-window-up)
 
 ;; Package setup
 (require 'package)
@@ -72,33 +105,46 @@
 (setq use-package-always-ensure t)
 (use-package diminish)
 
+(use-package request
+  :ensure)
+
 ;; Theme & Appearance
+(use-package spacemacs-theme
+  :init
+  (load-theme 'spacemacs-dark)
+  )
 (use-package doom-themes
   :init
   ;(setq doom-ir-black-brighter-comments 't)
   ;(load-theme 'doom-monokai-spectrum)
-  (load-theme 'doom-Iosvkem)
+  ;(load-theme 'modus-operandi)
+  ;(load-theme 'doom-ir-black)
+  ;(load-theme 'gruber-darker)
+  ;(load-theme 'doom-dark+)
+  ;(load-theme 'modus-vivendi-tinted)
   (custom-set-faces
    ;; Set a more legible background color for code blocks
-   '(markdown-code-face ((t (:background "#292c33"))))
-   '(org-code ((t (:background "#292c33"))))
-   '(org-block ((t (:background "#292c33"))))
-   '(org-block-begin-line ((t (:background "#292c33"))))
-   '(org-block-end-line ((t (:background "#292c33"))))
+   ;'(markdown-code-face ((t (:background "#292c33"))))
+   ;'(org-code ((t (:background "#292c33"))))
+   ;'(org-block ((t (:background "#292c33"))))
+   ;'(org-block-begin-line ((t (:background "#292c33"))))
+   ;'(org-block-end-line ((t (:background "#292c33"))))
    )
   )
 
 ;; Fast smooth-scrolling
 (use-package ultra-scroll
   :vc (:url "https://github.com/jdtsmith/ultra-scroll"
-       :rev :newest)
+	    :rev :newest)
   :init
   (setq scroll-conservatively 101 ; important!
         scroll-margin 0)
   :config
-  (ultra-scroll-mode 1))
+  (if (display-graphic-p) (ultra-scroll-mode 1))
+  )
 
-(use-package all-the-icons :defer)
+(use-package all-the-icons :defer) ;; run all-the-icons-install-fonts on first run
+(use-package all-the-icons-dired :ensure :defer)
 
 ;; Env vars
 (use-package exec-path-from-shell :ensure
@@ -134,13 +180,13 @@
   (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
   (define-key evil-normal-state-map (kbd "g ]") 'xref-go-forward)
   (define-key evil-normal-state-map (kbd "g [") 'xref-go-back)
-  (define-key evil-normal-state-map (kbd "K") 'eldoc-box-help-at-point)
+  (define-key evil-normal-state-map (kbd "K") (lambda () (interactive) (if (display-graphic-p) (call-interactively #'eldoc-box-help-at-point) (call-interactively #'eldoc-print-current-symbol-info))))
   (define-key evil-normal-state-map [mouse-2] nil)
   (define-key evil-insert-state-map [mouse-2] nil)
   (define-key evil-visual-state-map [mouse-2] nil)
   (define-key evil-motion-state-map [mouse-2] nil)
 
-  ;; Add some quick fwd / bad keys
+  ;; Add some quick fwd / back keys
   (enable-smooth-scroll-for-function evil-next-visual-line)
   (enable-smooth-scroll-for-function evil-previous-visual-line)
   ;; Make horizontal movement cross wrapped lines
@@ -169,17 +215,18 @@
   :hook (prog-mode . git-gutter-mode)
   :config
   (setq git-gutter:update-interval 0.1)
+  (setq git-gutter:modified-sign "▐")
+  (setq git-gutter:added-sign "▐")
+  (setq git-gutter:deleted-sign "━")
+
+  ; (defun customize-git-gutter-faces ()
+  ;   "Set Git Gutter face colors."
+  ;   (set-face-attribute 'git-gutter:modified nil :foreground "cyan" :background nil)
+  ;   (set-face-attribute 'git-gutter:added nil :foreground "green" :background nil)
+  ;   (set-face-attribute 'git-gutter:deleted nil :foreground "red" :background nil))
+  ;(add-hook 'after-load-theme-hook #'customize-git-gutter-faces)
   :custom
   (git-gutter:ask-p nil))
-
-(use-package git-gutter-fringe
-  :ensure
-  :config
-  (define-fringe-bitmap 'git-gutter-fr:added [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:modified [224] nil nil '(center repeated))
-  (define-fringe-bitmap 'git-gutter-fr:deleted [128 192 224 240] nil nil 'bottom)
-  (setq-default left-fringe-width 10)
-  )
 
 ;; Completion
 (use-package company
@@ -190,7 +237,7 @@
   :bind (
 	 ("C-<return>" . company-manual-begin))
   :custom
-  (company-idle-delay 0.25)
+  (company-idle-delay 1)
   (company-tooltip-align-annotations 't)
   (company-minimum-prefix-length 1))
 
@@ -215,7 +262,8 @@
   :init
   (which-key-mode 1)
   :custom
-  (which-key-idle-delay 0)
+  ; DO NOT SET TO 0. CAUSES LAG.
+  (which-key-idle-delay 0.05)
   (which-key-separator ":")
   (which-key-prefix-prefix "+"))
 
@@ -252,7 +300,10 @@
   )
 
 ;; used once in a while for file nav
-(use-package treemacs :ensure :defer)
+;(use-package treemacs :ensure :defer)
+(use-package dired-sidebar
+  :ensure
+  :commands (dired-sidebar-toggle-sidebar))
 
 ;; tell me what's wrong
 (use-package flycheck
@@ -329,6 +380,9 @@ Ignore any arguments (for theme hook compatibility)."
   (my-update-eldoc-box-padding)
   )
 
+(load "~/.config/emacs/llm.el")
+(load "~/.config/emacs/org.el")
+
 ;; General keymap
 (use-package general
   :after evil
@@ -383,7 +437,10 @@ Ignore any arguments (for theme hook compatibility)."
    "w"   '(:ignore t :wk "window")
    "w/"  '(split-window-right :wk "split right")
    "w-"  '(split-window-below :wk "split below")
+   "w?"  '(split-root-window-right :wk "split root right")
+   "w_"  '(split-root-window-below :wk "split root below")
    "wx"  '(delete-window :wk "delete window")
+   "wc"  '(centered-window-mode :wk "centered-window-mode")
    "wh"  '(evil-window-left :wk "left")
    "wj"  '(evil-window-down :wk "down")
    "wk"  '(evil-window-up :wk "up")
@@ -429,39 +486,49 @@ Ignore any arguments (for theme hook compatibility)."
    "//"   '(consult-line :wk "line")
    "/r"   '(consult-ripgrep :wk "ripgrep")
    "/f"   '(consult-fd :wk "file")
+   "/h"   '((lambda () (interactive)(consult-fd "~/")) :wk "file (from home)")
    "/o"   '(consult-outline :wk "outline")
    "/b"   '(consult-buffer :wk "buffer")
    "/t"   '(consult-theme :wk "theme")
    "/l"   '(consult-focus-lines :wk "focus lines")
+   "/p"   '(consult-project-buffer :wk "project buffer")
    ;; gptel
    "."    '(:ignore t :wk "gptel")
    ".."   '(gptel-menu :wk "gptel-menu")
    ".a"   '(gptel-add :wk "gptel-add")
    ".c"   '(gptel :wk "chat")
-   ".f"   '(gptel-context-add-file :wk "add/remove file")
    ".x"   '(gptel-abort :wk "abort")
+   ;; embark
+   ","   '(embark-act :wk "embark-act")
+   ;; eat
+   "t"   '(:ignore t "terminal")
+   "tt"  '(eat :wk "open terminal")
+   "tT"  '(eat-other-window :wk "open terminal ow")
+   "tp"  '(eat-project :wk "project terminal")
+   "tP"  '(eat-project-other-window :wk "project terminal o
+w")
+   "tn"  '((lambda () (interactive) (let ((current-prefix-arg '(4))) (call-interactively 'eat))) :wk "new terminal")
    ;; Other
    "i"   '((lambda () (interactive)(find-file "~/.config/emacs/init.el")) :wk "edit init.el")
-   "y"   '(eat :wk "open terminal")
    "f"   '(find-file :wk "find file")
-   "t"   '(treemacs :wk "treemacs")
+   "TAB" '(dired-sidebar-toggle-sidebar :wk "dired sidebar")
    "'"   '(comment-or-uncomment-region :wk "toggle comment")
    )
 )
 
 ;; Navigation
 (use-package avy :ensure :defer :diminish
+  :bind (("C-;" . evil-avy-goto-char-timer))
   :custom
-  (avy-timeout-seconds 0.15))
+  (avy-timeout-seconds 0.2))
 
 (use-package ace-window :ensure :defer :diminish)
 
 ;; Term
-(use-package vterm :ensure :defer
-  :init
-  (add-hook 'vterm-mode-hook 'evil-insert-state)
-  )
 (use-package eat :ensure :defer
+  :custom
+  (eat-kill-buffer-on-exit t)
+  (process-adaptive-read-buffering nil) ; makes EAT a lot quicker!
   :init
   (add-hook 'eat-mode-hook 'evil-insert-state)
   )
@@ -471,15 +538,21 @@ Ignore any arguments (for theme hook compatibility)."
   :defer
   :config
   (setq markdown-fontify-code-blocks-natively t)
+  (add-hook 'markdown-mode-hook 'visual-line-mode)
+  (add-hook 'markdown-mode-hook 'variable-pitch-mode)
+  (add-hook 'markdown-mode-hook 'toggle-word-wrap)
   )
 
 (use-package pdf-tools :ensure :defer)
 
 (use-package doom-modeline
   :ensure t
-  :init
-  (setq doom-modeline-minor-modes 1)
-  (doom-modeline-mode 1)
+  :hook (after-init . doom-modeline-mode)
+  :custom
+  (doom-modeline-minor-modes nil)
+  (doom-modeline-buffer-state-icon t)
+  (doom-modeline-buffer-file-name-style 'file-name-with-project)
+  (doom-modeline-height 10)
   )
 
 ;; Better minibuffer that shows completion candidates
@@ -520,7 +593,7 @@ Ignore any arguments (for theme hook compatibility)."
 ;; Perform actions!
 (use-package embark
   :ensure
-  :bind (("C-," . embark-act)
+  :bind (("C-," . embark-dwim)
 	 :map minibuffer-local-map
 	 ("C-c C-c" . embark-collect)
 	 ("C-c C-e" . embark-export))
@@ -530,40 +603,55 @@ Ignore any arguments (for theme hook compatibility)."
 (use-package embark-consult
   :ensure)
 
-;; gptel
-(use-package gptel
-  :ensure
-  :defer
-  :config
-  (setq gptel-confirm-tool-calls 't)
-  (gptel-make-anthropic "Claude"
-    :stream t
-    :key (getenv "CLAUDE_API_KEY"))
-  
-  (setq gptel-model 'Qwen2.5-Coder-32B-Instruct-exl2-8bpw-8hb
-        gptel-backend (gptel-make-openai "local"
-			:host (getenv "LOCAL_API_URL")
-			:protocol "http"
-			:endpoint "/v1/chat/completions"
-			:stream t
-			:key (getenv "LOCAL_API_KEY")
-			:models '("Qwen2.5-Coder-32B-Instruct-exl2-8bpw-8hb")))
-  )
-
 (use-package mlscroll
   :ensure t
   :config
-  (mlscroll-mode 1))
+  (mlscroll-mode)
+  )
 
 (use-package pyvenv :ensure :defer)
 
+(use-package popper :ensure
+  :bind (("s-[" . popper-toggle)
+	 ("s-]"   . popper-cycle)
+	 ("M-p" . popper-toggle-type))
+  :init
+  (setq popper-reference-buffers
+	'("\\*eldoc" help-mode)
+	)
+  (popper-mode)
+  (popper-echo-mode)
+  )
+
+(use-package centered-window :ensure :defer)
+
+;; Make text pulse when we do stuff to it
+(use-package evil-goggles
+  :diminish
+  :config
+  (setq evil-goggles-duration 0.03)
+  (evil-goggles-mode)
+  (evil-goggles-use-diff-faces))
+
+;; Do this for yanked regions too.
+(require 'pulse)
+;; Pulse copied regions
+(defun my/pulse-copied-region (beg end &rest _)
+  "Pulse the region that was just copied or yanked, from BEG to END."
+  (pulse-momentary-highlight-region beg end))
+
+;; Add the new pulsing behavior to kill-ring-save (M-w)
+(advice-add 'kill-ring-save :after #'my/pulse-copied-region)
+
+;; Add the new pulsing behavior to evil-yank
+(advice-add 'evil-yank :after #'my/pulse-copied-region)
+
 ;;; Manually customized variables
-(setq scroll-preserve-screen-position 1) ; fix scrolling?
+(setq scroll-preserve-screen-position nil) ; fix scrolling?
 (setq make-backup-files nil) ; stop creating backup~ files
 (setq auto-save-default nil) ; stop creating #autosave# files
 (setq create-lockfiles nil)  ; Temporary to make react dev server not puke...?
 (setq right-divider-width 3)
-
 
 ;; Custom variable for Esc clearing (if not already defined)
 (defcustom eldoc-box-clear-with-esc nil
@@ -583,11 +671,16 @@ Ignore any arguments (for theme hook compatibility)."
 ;; Enable Esc clearing by default (optional)
 (setq eldoc-box-clear-with-esc t)
 
-;; Load auto-customized vars & faces
-(load custom-file)
+;; Fix console settings
+(unless (display-graphic-p)
+  (xterm-mouse-mode)
+  )
 
 (put 'dired-find-alterate-file 'disabled nil)
 (setq dired-kill-when-opening-new-dired-buffer t)
+
+;; set gc-cons-threshold to something more reasonable now that packages are loaded
+(setq gc-cons-threshold 80000000)
 
 (provide 'init)
 ;;; init.el ends here
