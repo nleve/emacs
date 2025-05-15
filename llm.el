@@ -61,14 +61,14 @@
 
   (defvar n/gptel-llamacpp
     (gptel-make-openai "llamacpp"
-      :host ("192.168.1.160:8000")
+      :host "192.168.1.160:8000"
       :protocol "http"
       :endpoint "/v1/chat/completions"
       :stream t
-      :key ("asdf")
+      :key "asdf"
       :models '((Qwen3-32B :capabilities (nosystem tool-use reasoning))
 		)
-    )
+    ))
 
   (setq gptel-temperature nil) ; do not override any temperature settings on the backend!!
   
