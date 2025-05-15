@@ -635,6 +635,9 @@ w")
 
 ;; Do this for yanked regions too.
 (require 'pulse)
+(setq pulse-flag t) ; enable animation for non-GUI frames
+(setq pulse-iterations 5    ; number of fade steps
+      pulse-delay      0.03) ; delay between steps (seconds)
 ;; Pulse copied regions
 (defun my/pulse-copied-region (beg end &rest _)
   "Pulse the region that was just copied or yanked, from BEG to END."
