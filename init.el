@@ -153,10 +153,19 @@
   )
 
 ;; Add padding to make everything look more comfy
-(use-package spacious-padding :ensure
-  :init
-  (spacious-padding-mode)
-  )
+;(use-package spacious-padding :ensure
+;  :config
+;  (setq spacious-padding-widths
+;	'( :internal-border-width 10
+;	   :header-line-width 4
+;	   :mode-line-width 3
+;	   :tab-width 5
+;	   :right-divider-width 1
+;	   :scroll-bar-width 8
+;	   :fringe-width 10)
+;  :init
+;  (spacious-padding-mode)
+;  )
 
 ;; Evil
 (use-package evil
@@ -325,9 +334,9 @@
   (defun my-darken-color (color)
     "Return a slightly darker version of COLOR (a hex string like \"#RRGGBB\")."
     (let* ((rgb (color-name-to-rgb color)) ; Convert to (R G B) list, 0.0-1.0
-           (r (max 0 (- (nth 0 rgb) 0.04))) ; Reduce each by 0.04, clamp at 0
-           (g (max 0 (- (nth 1 rgb) 0.04)))
-           (b (max 0 (- (nth 2 rgb) 0.04))))
+           (r (max 0 (- (nth 0 rgb) 0.08))) ; Reduce each by 0.08, clamp at 0
+           (g (max 0 (- (nth 1 rgb) 0.08)))
+           (b (max 0 (- (nth 2 rgb) 0.08))))
       (format "#%02x%02x%02x"
               (floor (* r 255))  ; Convert back to 0-255 range
               (floor (* g 255))
@@ -426,10 +435,10 @@ Ignore any arguments (for theme hook compatibility)."
    "em"  '(eval-minibuffer :wk "eval-minibuffer")
    ;; Buffers
    "b"   '(:ignore t :wk "buffers")
-   "bX"  '(kill-buffer-and-window :wk "kill buffer / window")
+   "bw"  '(kill-buffer-and-window :wk "kill buffer / window")
    "bx"  '(kill-buffer :wk "kill buffer")
-   "bb"  '(ido-switch-buffer :wk "switch buffer")
-   "bm"  '(buffer-menu :wk "buffer menu")
+   "bs"  '(ido-switch-buffer :wk "switch buffer")
+   "bb"  '(bury-buffer :wk "bury buffer")
    "bi"  '(ibuffer :wk "ibuffer")
    "bn"  '(next-buffer :wk "next buffer")
    "bp"  '(previous-buffer :wk "previous buffer")
@@ -499,7 +508,7 @@ Ignore any arguments (for theme hook compatibility)."
    ".c"   '(gptel :wk "chat")
    ".x"   '(gptel-abort :wk "abort")
    ;; embark
-   ","   '(embark-act :wk "embark-act")
+   ","   '(embark-act :wk "embark-dwim")
    ;; eat
    "t"   '(:ignore t "terminal")
    "tt"  '(eat :wk "open terminal")
@@ -551,8 +560,8 @@ w")
   :custom
   (doom-modeline-minor-modes nil)
   (doom-modeline-buffer-state-icon t)
-  (doom-modeline-buffer-file-name-style 'file-name-with-project)
-  (doom-modeline-height 10)
+  (doom-modeline-buffer-file-name-style 'auto) ;'file-name-with-project)
+  (doom-modeline-height 15)
   )
 
 ;; Better minibuffer that shows completion candidates
@@ -580,7 +589,8 @@ w")
 
 ;; enhanced versions of built-in functionality such as search
 (use-package consult
-  :ensure)
+  :ensure
+  :bind (("C-'" . consult-buffer)))
 
 ;; consult integration with project.el
 (use-package consult-project-extra
@@ -593,7 +603,7 @@ w")
 ;; Perform actions!
 (use-package embark
   :ensure
-  :bind (("C-," . embark-dwim)
+  :bind (("C-," . embark-act)
 	 :map minibuffer-local-map
 	 ("C-c C-c" . embark-collect)
 	 ("C-c C-e" . embark-export))
@@ -654,7 +664,6 @@ w")
 (setq make-backup-files nil) ; stop creating backup~ files
 (setq auto-save-default nil) ; stop creating #autosave# files
 (setq create-lockfiles nil)  ; Temporary to make react dev server not puke...?
-(setq right-divider-width 3)
 
 ;; Custom variable for Esc clearing (if not already defined)
 (defcustom eldoc-box-clear-with-esc nil
@@ -674,10 +683,14 @@ w")
 ;; Enable Esc clearing by default (optional)
 (setq eldoc-box-clear-with-esc t)
 
-;; Fix console settings
-(unless (display-graphic-p)
-  (xterm-mouse-mode)
-  )
+;; Compile customization
+(setq compilation-scroll-output t
+      compilation-auto-jump-to-first-error t
+      compilation-max-output-line-length nil
+      )
+
+;; Fix console mouse behavior
+(unless (display-graphic-p) (xterm-mouse-mode))
 
 (put 'dired-find-alterate-file 'disabled nil)
 (setq dired-kill-when-opening-new-dired-buffer t)

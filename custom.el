@@ -28,7 +28,7 @@
 		   pdf-tools plz popper pyvenv rainbow-delimiters
 		   request smooth-scrolling spacemacs-theme
 		   spacious-padding spinner sticky-scroll
-		   sticky-scroll-mode treemacs treesit-auto
+		   sticky-scroll-mode tabspaces treemacs treesit-auto
 		   ultra-scroll vertico vterm zig-mode))
  '(spacious-padding-widths
    '(:internal-border-width 10 :header-line-width 4 :mode-line-width 3
