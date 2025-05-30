@@ -49,12 +49,24 @@
       :models n/gptel-tabbyAPI-models))
 
   (defvar n/gptel-openrouter-models
-    '(
+    '((openai/GPT-4o-mini
+           :description "OpenAI latest thinking model suited for programming"
+           :capabilities (tool-use cache)
+           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+           :context-window 128000
+           )
+    (google/gemini-2.5-flash-preview-05-20
+           :description "Google's latest workhorse model with advanced reasoning"
+           :capabilities (media tool-use cache)
+           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+           :context-window 1000000
+           )
       ))
 
   (defvar n/gptel-openrouter
     (gptel-make-openai "openrouter"
-      :host "https://openrouter.ai/api/v1"
+      :host "openrouter.ai"
+      :endpoint "/api/v1/chat/completions"
       :stream t
       :key (getenv "OPENROUTER_KEY")
       :models n/gptel-openrouter-models))
@@ -148,6 +160,7 @@ by isolating the specified parameters for each request."
 	(apply #'gptel-request gptel-args))))
 
 
+;;;###autoload
   (defun n/gptel-switch-model ()
     "Switch GPT backend and model with completion support."
     (interactive)
@@ -195,45 +208,6 @@ by isolating the specified parameters for each request."
 	  (setq gptel-backend backend
 		gptel-model model)
 	  (message "Switched to %s" selected)))))
-
-
-  ;; (defun n/gptel-context-insert-buffer-string (buffer contexts)
-  ;;   "Insert at point a context string from all CONTEXTS in BUFFER."
-  ;;   (let ((is-top-snippet t)
-  ;; 	  (previous-line 1))
-  ;;     (insert (format "%s:" (buffer-name buffer))
-  ;; 	      "\n\n```"
-  ;; 	      (gptel--strip-mode-suffix (buffer-local-value
-  ;; 					 'major-mode buffer))
-  ;; 	      "\n")
-  ;;     (dolist (context contexts)
-  ;; 	(let* ((start (overlay-start context))
-  ;; 	       (end (overlay-end context))
-  ;; 	       content)
-  ;; 	  (let (lineno column)
-  ;; 	    (with-current-buffer buffer
-  ;; 	      (without-restriction
-  ;; 		(setq lineno (line-number-at-pos start t)
-  ;; 		      column (save-excursion (goto-char start)
-  ;; 					     (current-column))
-  ;; 		      content (buffer-substring-no-properties start end))))
-  ;; 	    ;; We do not need to insert a line number indicator if we have two regions
-  ;; 	    ;; on the same line, because the previous region should have already put the
-  ;; 	    ;; indicator.
-  ;; 	    (unless (= previous-line lineno)
-  ;; 	      (unless (= lineno 1)
-  ;; 		(unless is-top-snippet
-  ;; 		  (insert "\n"))
-  ;; 		(insert (format "... (Line %d)\n" lineno))))
-  ;; 	    (setq previous-line lineno)
-  ;; 	    (unless (zerop column) (insert " ..."))
-  ;; 	    (if is-top-snippet
-  ;; 		(setq is-top-snippet nil)
-  ;; 	      (unless (= previous-line lineno) (insert "\n"))))
-  ;; 	  (insert content)))
-  ;;     (unless (>= (overlay-end (car (last contexts))) (point-max))
-  ;; 	(insert "\n..."))
-  ;;     (insert "\n```")))
 
   (defun n/gptel-context-insert-buffer-string (buffer contexts)
     "Insert at point a context string from all CONTEXTS in BUFFER."
@@ -308,97 +282,41 @@ it, respectively."
 	message)))
 
   (setopt gptel-context-wrap-function #'n/gptel-context-wrap-function)
-
-;; (defun n/gptel-context-insert-buffer-string (buffer contexts)
-;;   "Insert at point context strings from CONTEXTS in BUFFER.
-
-;; Each context is placed in its own fenced code block with filename
-;; and line numbers, like: ```lang filename:start-end
-
-;; If CONTEXTS covers the entire BUFFER, omit line numbers in the header."
-;;   (let* ((buffer-file-name (buffer-file-name buffer)) ; Prefer actual file name
-;;          (buffer-name (buffer-name buffer))
-;;          (filename (file-name-nondirectory (or buffer-file-name buffer-name))) ; Use filename part
-;;          (language (gptel--strip-mode-suffix
-;;                     (buffer-local-value 'major-mode buffer)))
-;;          (num-contexts (length contexts)))
-
-;;     ;; --- Special Case: Whole Buffer ---
-;;     ;; Check if there's exactly one context and it spans the whole buffer.
-;;     (when (and (= num-contexts 1)
-;;                (let ((ctx (car contexts)))
-;;                  (with-current-buffer buffer
-;;                    (without-restriction
-;;                     (and (= (overlay-start ctx) (point-min))
-;;                          ;; Use >= in case point-max isn't exactly overlay-end
-;;                          (>= (overlay-end ctx) (point-max)))))))
-;;       ;; Insert entire buffer content with a simpler header (no line numbers)
-;;       (insert (format "```%s %s\n" language filename))
-;;       (with-current-buffer buffer
-;;         (without-restriction
-;;          (insert (buffer-substring-no-properties (point-min) (point-max)))))
-;;       ;; Ensure content ends with newline before closing fence
-;;       (unless (save-excursion (goto-char (point-max)) (bolp))
-;;           (insert "\n"))
-;;       (insert "```\n") ; Add extra newline for separation
-;;       ;; Exit early as we've handled the whole buffer case
-;;       (return-from n/gptel-context-insert-buffer-string))
-
-;;     ;; --- General Case: Process Contexts Individually ---
-;;     (dolist (context contexts)
-;;       (let* ((start (overlay-start context))
-;;              (end (overlay-end context))
-;;              start-line end-line content)
-
-;;         ;; Get line numbers and content safely within the target buffer
-;;         (with-current-buffer buffer
-;;           (without-restriction
-;;            (setq start-line (line-number-at-pos start t)
-;;                  ;; Get line number of the *last character* included.
-;;                  ;; Handle edge case: if end is point-min (empty region at start),
-;;                  ;; or if start == end. Use start-line in that case.
-;;                  end-line (if (> end start)
-;;                               (line-number-at-pos (1- end) t)
-;;                             start-line)
-;;                  content (buffer-substring-no-properties start end))))
-
-;;         ;; --- Insert the formatted block for this context ---
-;;         (insert (format "```%s %s:%d-%d\n"
-;;                         language filename start-line end-line))
-;;         (insert content)
-;;         ;; Ensure content ends with a newline before the closing fence
-;;         (unless (string-match-p "\n\\'" content)
-;;           (insert "\n"))
-;;         (insert "```\n") ; Add extra newline for separation after the block
-;;         ))))
-
   )
 
+;; get rid of prefix and change face of gptel responses instead
+(setf (alist-get 'markdown-mode gptel-prompt-prefix-alist) "")
+(setf (alist-get 'text-mode gptel-prompt-prefix-alist) "")
 
-;; ;; Define a face for GPTel responses
-;; (defface gptel-response-face
-;;   '((t :background "#f0f0f0"))
-;;   "Face for GPTel responses in the buffer."
-;;   :group 'gptel)
+;; Change face of gptel responses
+(defface gptel-response-face
+  '((((background dark)  (min-colors 88)) :background "gray9" :extend t)
+    (((background light) (min-colors 88)) :background "alice blue" :extend t)
+    (t :inherit mode-line))
+  "Face used to highlight gptel responses."
+  :group 'custom-faces)
 
-;; (defun gptel--font-lock-matcher (limit)
-;;   (when-let ((match (text-property-search-forward 'gptel 'response t limit)))
-;;     (set-match-data (list (prop-match-beginning match) (prop-match-end match)))
-;;     (goto-char (prop-match-end match))
-;;     t))
+;; Font-lock matcher for 'gptel property
+(defun gptel-font-lock-matcher (limit)
+  "Font-lock matcher for text with 'gptel property up to LIMIT."
+  (let (start end)
+    (while (and (< (point) limit)
+                ;; Match any non-nil 'gptel property
+                (setq start (next-single-property-change (point) 'gptel nil limit))
+                (get-text-property start 'gptel))
+      (setq end (or (next-single-property-change start 'gptel nil limit) limit))
+      (put-text-property start end 'font-lock-face 'gptel-response-face)
+      (goto-char end))
+    nil))
 
-;; ;; Enable highlighting in gptel-mode buffers
-;; (add-hook 'gptel-mode-hook
-;;           (lambda ()
-;;             (font-lock-add-keywords 'gptel-mode
-;;                                     '((gptel--font-lock-matcher 0 gptel-response-face 't)))
-;;             (font-lock-flush)))
-;; (defun test-gptel-matcher ()
-;;   (interactive)
-;;   (save-excursion
-;;     (goto-char (point-min))
-;;     (while (gptel--font-lock-matcher (point-max))
-;;       (message "Match found: %s to %s" (match-beginning 0) (match-end 0)))))
+;; Add the matcher to font-lock globally
+(add-hook 'font-lock-mode-hook
+          (lambda ()
+            (font-lock-add-keywords nil
+                                    '((gptel-font-lock-matcher . gptel-response-face))
+                                    'append)))
+
+(add-hook 'gptel-post-stream-hook 'font-lock-update)
 
 
 
