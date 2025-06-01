@@ -149,7 +149,7 @@
 ;; Env vars
 (use-package exec-path-from-shell :ensure
   :init
-  (exec-path-from-shell-copy-env "PATH")
+  (exec-path-from-shell-initialize)
   )
 
 ;; Add padding to make everything look more comfy
