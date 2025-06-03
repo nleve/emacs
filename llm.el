@@ -50,7 +50,7 @@
 
   (defvar n/gptel-openrouter-models
     '(
-      (google/gemini-2.5-flash-preview-05-20:thinking
+      (google/gemini-2.5-flash-preview-05-20
        :description "Google's latest workhorse model"
        :capabilities (media tool-use cache)
        :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
@@ -91,8 +91,8 @@
 
   (setq gptel-temperature nil) ; do not override any temperature settings on the backend!!
   
-  (setopt gptel-model 'QwQ-32B-exl2-6bpw-6hb
-	  gptel-backend n/gptel-tabbyAPI)
+  (setopt gptel-model 'google/gemini-2.5-flash-preview-05-20:thinking
+	  gptel-backend n/gptel-openrouter)
 
   ;; Get rid of the default backend, it clutters up the model selection
   (delete (assoc "ChatGPT" gptel--known-backends) gptel--known-backends)
