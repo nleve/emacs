@@ -49,18 +49,25 @@
       :models n/gptel-tabbyAPI-models))
 
   (defvar n/gptel-openrouter-models
-    '((openai/GPT-4o-mini
-           :description "OpenAI latest thinking model suited for programming"
-           :capabilities (tool-use cache)
-           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
-           :context-window 128000
-           )
-    (google/gemini-2.5-flash-preview-05-20
-           :description "Google's latest workhorse model with advanced reasoning"
-           :capabilities (media tool-use cache)
-           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
-           :context-window 1000000
-           )
+    '(
+      (google/gemini-2.5-flash-preview-05-20:thinking
+       :description "Google's latest workhorse model"
+       :capabilities (media tool-use cache)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 1000000
+       )
+      (google/gemini-2.5-flash-preview-05-20:thinking
+       :description "Google's latest workhorse model with advanced reasoning"
+       :capabilities (media tool-use cache)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 1000000
+       )
+      (google/gemini-2.5-pro-preview
+       :description "Google's top model with thinking"
+       :capabilities (media tool-use cache)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 1000000
+       )
       ))
 
   (defvar n/gptel-openrouter
