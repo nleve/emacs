@@ -519,6 +519,7 @@ w")
    "tn"  '((lambda () (interactive) (let ((current-prefix-arg '(4))) (call-interactively 'eat))) :wk "new terminal")
    ;; Other
    "i"   '((lambda () (interactive)(find-file "~/.config/emacs/init.el")) :wk "edit init.el")
+   "n"   '((lambda () (interactive)(find-file "~/notebook.org")) :wk "edit notebook.org")
    "f"   '(find-file :wk "find file")
    "TAB" '(dired-sidebar-toggle-sidebar :wk "dired sidebar")
    "'"   '(comment-or-uncomment-region :wk "toggle comment")
@@ -634,6 +635,43 @@ w")
   )
 
 (use-package centered-window :ensure :defer)
+
+;; (use-package tabspaces
+;;   :vc (:url "https://github.com/mclear-tools/tabspaces"
+;; 	    :rev :newest)
+;;   :ensure
+;;   :hook (after-init . tabspaces-mode)
+;;   :commands (tabspaces-switch-or-create-workspace
+;;              tabspaces-open-or-create-project-and-workspace)
+;;   :custom
+;;   (tabspaces-use-filtered-buffers-as-default t)
+;;   (tabspaces-default-tab "Default")
+;;   (tabspaces-remove-to-default t)
+;;   (tabspaces-include-buffers '("*scratch*"))
+;;   ;; sessions
+;;   (tabspaces-session t)
+;;   (tabspaces-session-auto-restore t)
+;;   (tab-bar-new-tab-choice "*scratch*"))
+
+;; ;; Filter Buffers for Consult-Buffer
+;; (with-eval-after-load 'consult
+;; ;; hide full buffer list (still available with "b" prefix)
+;; (consult-customize consult--source-buffer :hidden t :default nil)
+;; ;; set consult-workspace buffer list
+;; (defvar consult--source-workspace
+;;   (list :name     "Workspace Buffers"
+;;         :narrow   ?w
+;;         :history  'buffer-name-history
+;;         :category 'buffer
+;;         :state    #'consult--buffer-state
+;;         :default  t
+;;         :items    (lambda () (consult--buffer-query
+;;                          :predicate #'tabspaces--local-buffer-p
+;;                          :sort 'visibility
+;;                          :as #'buffer-name)))
+
+;;   "Set workspace buffer list for consult-buffer.")
+;; (add-to-list 'consult-buffer-sources 'consult--source-workspace))
 
 ;; Make text pulse when we do stuff to it
 (use-package evil-goggles
