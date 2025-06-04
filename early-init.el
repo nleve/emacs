@@ -17,3 +17,7 @@
 (setq read-process-output-max (* 1024 1024)) ;; 1mb
 (setq max-lisp-eval-depth 10000)
 
+;; make it a bigger window
+(setq default-frame-alist
+       '((width . 256)    ; characters in a line
+        (height . 72))) ; number of lines

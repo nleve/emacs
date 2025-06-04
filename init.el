@@ -153,19 +153,19 @@
   )
 
 ;; Add padding to make everything look more comfy
-;(use-package spacious-padding :ensure
-;  :config
-;  (setq spacious-padding-widths
-;	'( :internal-border-width 10
-;	   :header-line-width 4
-;	   :mode-line-width 3
-;	   :tab-width 5
-;	   :right-divider-width 1
-;	   :scroll-bar-width 8
-;	   :fringe-width 10)
-;  :init
-;  (spacious-padding-mode)
-;  )
+;; (use-package spacious-padding :ensure
+;;  :config
+;;  (setq spacious-padding-widths
+;; 	'( :internal-border-width 10
+;; 	   :header-line-width 4
+;; 	   :mode-line-width 3
+;; 	   :tab-width 5
+;; 	   :right-divider-width 1
+;; 	   :scroll-bar-width 8
+;; 	   :fringe-width 10))
+;;  :init
+;;  (spacious-padding-mode)
+;;  )
 
 ;; Evil
 (use-package evil
@@ -218,24 +218,17 @@
 ;; Git
 (use-package magit :defer)
 
-(use-package git-gutter
+(use-package diff-hl
   :ensure
-  :diminish
-  :hook (prog-mode . git-gutter-mode)
   :config
-  (setq git-gutter:update-interval 0.1)
-  (setq git-gutter:modified-sign "▐")
-  (setq git-gutter:added-sign "▐")
-  (setq git-gutter:deleted-sign "━")
-
-  ; (defun customize-git-gutter-faces ()
-  ;   "Set Git Gutter face colors."
-  ;   (set-face-attribute 'git-gutter:modified nil :foreground "cyan" :background nil)
-  ;   (set-face-attribute 'git-gutter:added nil :foreground "green" :background nil)
-  ;   (set-face-attribute 'git-gutter:deleted nil :foreground "red" :background nil))
-  ;(add-hook 'after-load-theme-hook #'customize-git-gutter-faces)
-  :custom
-  (git-gutter:ask-p nil))
+  (setq diff-hl-disable-on-remote 't)
+  (setq diff-hl-show-staged-changes nil)
+  (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (diff-hl-flydiff-mode 1)
+  ;(eval-after-load 'diff-hl
+  ;  '(progn
+  ;     (advice-add 'diff-hl-next-hunk :after #'recenter-top-bottom)))
+  )
 
 ;; Completion
 (use-package company
@@ -315,21 +308,13 @@
   :commands (dired-sidebar-toggle-sidebar))
 
 ;; tell me what's wrong
-(use-package flycheck
-  :ensure
-  :hook (prog-mode . flycheck-mode)
-  :bind (:map flycheck-mode-map
-	      ("C-c ! n" . flycheck-goto-next-error)
-	      ("C-c ! p" . flycheck-goto-prev-error)
-	      ("C-c ! l" . flycheck-show-buffer-diagnostics)))
+(add-hook 'prog-mode-hook #'flymake-mode)
 
 (use-package eldoc-box
   :defer
   :config
-  (setq eldoc-box-clear-with-C-g 't)
-  ;(set-face-attribute 'eldoc-box-border nil :background "gray30")
 
-  ;; Fix eldoc-box + spacious-padding-mode
+  (setq eldoc-box-clear-with-C-g 't)
   ;; Function to darken a color slightly
   (defun my-darken-color (color)
     "Return a slightly darker version of COLOR (a hex string like \"#RRGGBB\")."
@@ -341,52 +326,20 @@
               (floor (* r 255))  ; Convert back to 0-255 range
               (floor (* g 255))
               (floor (* b 255)))))
-  
-  ;; Function to update eldoc-box-frame-parameters and faces
-  (defun my-update-eldoc-box-padding (&rest _)
-    "Update `eldoc-box-frame-parameters`, `eldoc-box-border`, and `eldoc-box-body`.
-Ignore any arguments (for theme hook compatibility)."
-    (let ((params (copy-sequence eldoc-box-frame-parameters))
-          (default-bg (face-background 'default nil t)))
-      (if spacious-padding-mode
-          (let ((darker-bg (my-darken-color default-bg))) ; Darken the default background
-            ;; Update frame parameters
-            (setq params (assq-delete-all 'internal-border-width params))
-            (setq params (assq-delete-all 'left-fringe params))
-            (setq params (assq-delete-all 'right-fringe params))
-            (setq params (append params
-				 `((internal-border-width . ,(spacious-padding--get-internal-border-width))
-                                   (left-fringe . ,(or (spacious-padding--get-left-fringe-width)
-                                                       (spacious-padding--get-fringe-width)))
-                                   (right-fringe . ,(or (spacious-padding--get-right-fringe-width)
-							(spacious-padding--get-fringe-width))))))
-            ;; Set border and body faces to the darker background
-            (set-face-attribute 'eldoc-box-border nil :background darker-bg)
-            (set-face-attribute 'eldoc-box-body nil :background darker-bg))
-	;; Reset to original values when mode is off
-	(setq params (assq-delete-all 'internal-border-width params))
-	(setq params (assq-delete-all 'left-fringe params))
-	(setq params (assq-delete-all 'right-fringe params))
-	(setq params (append params '((internal-border-width . 1)
-                                      (left-fringe . 3)
-                                      (right-fringe . 3))))
-	(set-face-attribute 'eldoc-box-border nil
-                            :background (if (eq frame-background-mode 'dark) "white" "black"))
-	(set-face-attribute 'eldoc-box-body nil :background nil)) ; Reset to default
-      (setq eldoc-box-frame-parameters params)
-      ;; Reset existing frame if it exists
-      (when (and eldoc-box--frame (frame-live-p eldoc-box--frame))
-	(delete-frame eldoc-box--frame)
-	(setq eldoc-box--frame nil))))
-  
-  ;; Hook into spacious-padding-mode toggle
-  (add-hook 'spacious-padding-mode-hook #'my-update-eldoc-box-padding)
+
+  (defun my-darken-eldoc-box ()
+    (interactive)
+    (let ((darker-bg (my-darken-color (face-background 'default nil t))))
+      (set-face-attribute 'eldoc-box-border nil :background darker-bg)
+      (set-face-attribute 'eldoc-box-body nil :background darker-bg)
+      )
+    )
   
   ;; Hook into theme changes
-  (add-hook 'enable-theme-functions #'my-update-eldoc-box-padding)
+  (add-hook 'enable-theme-functions #'my-darken-eldoc-box)
   
   ;; Run once to apply current state
-  (my-update-eldoc-box-padding)
+  (my-darken-eldoc-box)
   )
 
 (load "~/.config/emacs/llm.el")
@@ -468,11 +421,11 @@ Ignore any arguments (for theme hook compatibility)."
    "gd"  '(magit-file-dispatch :wk "dispatch")
    "gl"  '(magit-log :wk "log")
    "gb"  '(magit-blame :wk "blame")
-   "gn"  '(git-gutter:next-hunk :wk "next hunk")
-   "gp"  '(git-gutter:previous-hunk :wk "previous hunk")
-   "gs"  '(git-gutter:stage-hunk :wk "stage hunk")
-   "gr"  '(git-gutter:revert-hunk :wk "revert hunk")
-   "gh"  '(git-gutter:popup-hunk :wk "diff hunk")
+   "gn"  '(diff-hl-next-hunk :wk "next hunk")
+   "gp"  '(diff-hl-previous-hunk :wk "previous hunk")
+   "gs"  '(diff-hl-stage-dwim :wk "stage hunk")
+   "gr"  '(diff-hl-revert-hunk :wk "revert hunk")
+   "gh"  '(diff-hl-show-hunk :wk "show hunk")
    ;; Avy
    "l"    '(evil-avy-goto-line :wk "goto-line")
    "c"    '(evil-avy-goto-char-timer :wk "goto-char")
@@ -500,7 +453,9 @@ Ignore any arguments (for theme hook compatibility)."
    "/b"   '(consult-buffer :wk "buffer")
    "/t"   '(consult-theme :wk "theme")
    "/l"   '(consult-focus-lines :wk "focus lines")
-   "/p"   '(consult-project-buffer :wk "project buffer")
+   "/e"   '(consult-flymake :wk "consult-flymake")
+   "p"   '(consult-project-extra-find :wk "project find")
+   "P"   '(consult-project-extra-find-other-window :wk "project find ow")
    ;; gptel
    "."    '(:ignore t :wk "gptel")
    ".."   '(gptel-menu :wk "gptel-menu")
@@ -591,7 +546,7 @@ w")
 ;; enhanced versions of built-in functionality such as search
 (use-package consult
   :ensure
-  :bind (("C-'" . consult-buffer)))
+  :bind (("C-'" . consult-project-extra-find)))
 
 ;; consult integration with project.el
 (use-package consult-project-extra
@@ -737,6 +692,16 @@ w")
 
 ;; set gc-cons-threshold to something more reasonable now that packages are loaded
 (setq gc-cons-threshold 80000000)
+
+;; Start emacs server
+(require 'server)
+
+(unless (server-running-p)
+  (server-start))
+
+(desktop-save-mode 1)
+
+(dtrt-indent-global-mode 1)
 
 (provide 'init)
 ;;; init.el ends here
