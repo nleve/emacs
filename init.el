@@ -620,7 +620,9 @@ w")
   (mlscroll-mode)
   )
 
-(use-package pyvenv :ensure :defer)
+(use-package pet
+  :config
+  (add-hook 'python-base-mode-hook 'pet-mode -10))
 
 (use-package popper :ensure
   :bind (("s-[" . popper-toggle)
