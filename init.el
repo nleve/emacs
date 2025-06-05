@@ -4,7 +4,7 @@
 ; This is my init.el.  There are many like it, but this one is mine.
 ;
 ;;; Code:
-(toggle-scroll-bar -1)
+(toggle-scroll-bar 1)
 
 (setq shell-command-switch "-ic")
 (setq custom-file "~/.config/emacs/custom.el")
