@@ -570,11 +570,11 @@ w")
 (use-package embark-consult
   :ensure)
 
-(use-package mlscroll
-  :ensure t
-  :config
-  (mlscroll-mode)
-  )
+;(use-package mlscroll
+;  :ensure t
+;  :config
+;  (mlscroll-mode)
+;  )
 
 (use-package pet
   :config
