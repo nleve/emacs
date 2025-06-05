@@ -224,6 +224,7 @@
   (setq diff-hl-disable-on-remote 't)
   (setq diff-hl-show-staged-changes nil)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
+  (global-diff-hl-mode 1)
   (diff-hl-flydiff-mode 1)
   ;(eval-after-load 'diff-hl
   ;  '(progn
