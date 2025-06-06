@@ -5,6 +5,11 @@
 ;
 ;;; Code:
 (toggle-scroll-bar 1)
+(defun n/disable-scroll-bar (window)
+  "Disable scroll bar for WINDOW."
+  (set-window-scroll-bars window nil nil nil nil 1))
+
+(n/disable-scroll-bar (minibuffer-window))
 
 (setq shell-command-switch "-ic")
 (setq custom-file "~/.config/emacs/custom.el")
@@ -226,9 +231,10 @@
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode 1)
   (diff-hl-flydiff-mode 1)
-  ;(eval-after-load 'diff-hl
-  ;  '(progn
-  ;     (advice-add 'diff-hl-next-hunk :after #'recenter-top-bottom)))
+  (eval-after-load 'diff-hl
+    '(progn
+       (advice-add 'diff-hl-next-hunk :after (lambda (&rest _args) (recenter 5)))
+       ))
   )
 
 ;; Completion
@@ -594,42 +600,42 @@ w")
 
 (use-package centered-window :ensure :defer)
 
-;; (use-package tabspaces
-;;   :vc (:url "https://github.com/mclear-tools/tabspaces"
-;; 	    :rev :newest)
-;;   :ensure
-;;   :hook (after-init . tabspaces-mode)
-;;   :commands (tabspaces-switch-or-create-workspace
-;;              tabspaces-open-or-create-project-and-workspace)
-;;   :custom
-;;   (tabspaces-use-filtered-buffers-as-default t)
-;;   (tabspaces-default-tab "Default")
-;;   (tabspaces-remove-to-default t)
-;;   (tabspaces-include-buffers '("*scratch*"))
-;;   ;; sessions
-;;   (tabspaces-session t)
-;;   (tabspaces-session-auto-restore t)
-;;   (tab-bar-new-tab-choice "*scratch*"))
+(use-package tabspaces
+  :vc (:url "https://github.com/mclear-tools/tabspaces"
+	    :rev :newest)
+  :ensure
+  :hook (after-init . tabspaces-mode)
+  :commands (tabspaces-switch-or-create-workspace
+             tabspaces-open-or-create-project-and-workspace)
+  :custom
+  (tabspaces-use-filtered-buffers-as-default t)
+  (tabspaces-default-tab "Default")
+  (tabspaces-remove-to-default t)
+  (tabspaces-include-buffers '("*scratch*"))
+  ;; sessions
+  (tabspaces-session nil)
+  (tabspaces-session-auto-restore nil)
+  (tab-bar-new-tab-choice "*scratch*"))
 
-;; ;; Filter Buffers for Consult-Buffer
-;; (with-eval-after-load 'consult
-;; ;; hide full buffer list (still available with "b" prefix)
-;; (consult-customize consult--source-buffer :hidden t :default nil)
-;; ;; set consult-workspace buffer list
-;; (defvar consult--source-workspace
-;;   (list :name     "Workspace Buffers"
-;;         :narrow   ?w
-;;         :history  'buffer-name-history
-;;         :category 'buffer
-;;         :state    #'consult--buffer-state
-;;         :default  t
-;;         :items    (lambda () (consult--buffer-query
-;;                          :predicate #'tabspaces--local-buffer-p
-;;                          :sort 'visibility
-;;                          :as #'buffer-name)))
+;; Filter Buffers for Consult-Buffer
+(with-eval-after-load 'consult
+  ;; hide full buffer list (still available with "b" prefix)
+  (consult-customize consult--source-buffer :hidden t :default nil)
+  ;; set consult-workspace buffer list
+  (defvar consult--source-workspace
+    (list :name     "Workspace Buffers"
+          :narrow   ?w
+          :history  'buffer-name-history
+          :category 'buffer
+          :state    #'consult--buffer-state
+          :default  t
+          :items    (lambda () (consult--buffer-query
+                                :predicate #'tabspaces--local-buffer-p
+                                :sort 'visibility
+                                :as #'buffer-name))))
 
-;;   "Set workspace buffer list for consult-buffer.")
-;; (add-to-list 'consult-buffer-sources 'consult--source-workspace))
+  ;; "Set workspace buffer list for consult-buffer."
+  (add-to-list 'consult-buffer-sources 'consult--source-workspace))
 
 ;; Make text pulse when we do stuff to it
 (use-package evil-goggles
