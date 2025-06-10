@@ -382,12 +382,8 @@
    "" nil
    ;; "/" '(counsel-rg :wk "riggrep") ; need counsel
    "SPC" '(execute-extended-command :wk "M-x")
-   ;; prx
-   "["   '(:ignore t :wk "prx")
-   "[["  '(prx-read-prompt :wk "prx-read-prompt")
-   "[b"  '(prx-buffer-with-prompt :wk "prx-buffer-with-prompt")
-   "[v"  '(prx-selection-with-prompt :wk "prx-selection-with-prompt")
-   "[m"  '(prx-set-current-model :wk "prx-set-current-model")
+   ;; bonk
+   "["   '(bonk-map :wk "bonk")
    ;; eval
    "eb"  '(eval-buffer :wk "eval-buffer")
    "er"  '(eval-region :wk "eval-region")
@@ -461,6 +457,7 @@
    "/t"   '(consult-theme :wk "theme")
    "/l"   '(consult-focus-lines :wk "focus lines")
    "/e"   '(consult-flymake :wk "consult-flymake")
+   "/m"   '(consult-line-multi :wk "consult-line-multi")
    "p"   '(consult-project-extra-find :wk "project find")
    "P"   '(consult-project-extra-find-other-window :wk "project find ow")
    ;; gptel
