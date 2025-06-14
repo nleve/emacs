@@ -1,6 +1,8 @@
-;;; llm.el --- my llm-related customizations
+;;; llm.el --- my llm-related customizations  -*- lexical-binding: t; -*-
 
 ;; gptel
+(require 'transient)
+
 (use-package gptel
   :ensure
   :defer
@@ -33,13 +35,13 @@
       :models n/gptel-anthropic-models)
     )
 
-  (defvar n/gptel-tabbyAPI-models
+  (setq n/gptel-tabbyAPI-models
     '((Qwen2.5-Coder-32B-Instruct-exl2-8bpw-8hb) ;; add more options here
       (QwQ-32B-exl2-8bpw-8hb :capabilities (nosystem tool-use reasoning))
       (QwQ-32B-exl2-6bpw-6hb :capabilities (nosystem tool-use reasoning))
       ))
 
-  (defvar n/gptel-tabbyAPI
+  (setq n/gptel-tabbyAPI
     (gptel-make-openai "tabbyAPI"
       :host (getenv "LOCAL_API_URL")
       :protocol "http"
@@ -48,7 +50,7 @@
       :key (getenv "TABBYAPI_KEY")
       :models n/gptel-tabbyAPI-models))
 
-  (defvar n/gptel-openrouter-models
+  (setq n/gptel-openrouter-models
     '(
       (google/gemini-2.5-flash-preview-05-20
        :description "Google's latest workhorse model"
@@ -70,7 +72,7 @@
        )
       ))
 
-  (defvar n/gptel-openrouter
+  (setq n/gptel-openrouter
     (gptel-make-openai "openrouter"
       :host "openrouter.ai"
       :endpoint "/api/v1/chat/completions"
@@ -78,7 +80,7 @@
       :key (getenv "OPENROUTER_KEY")
       :models n/gptel-openrouter-models))
 
-  (defvar n/gptel-llamacpp
+  (setq n/gptel-llamacpp
     (gptel-make-openai "llamacpp"
       :host "192.168.1.160:8000"
       :protocol "http"
@@ -86,10 +88,58 @@
       :stream t
       :key "asdf"
       :models '((Qwen3-32B :capabilities (nosystem tool-use reasoning))
+		(Mistral-Small :capabilities (tool-use))
 		)
     ))
 
+  ;; add "us." prefix to enable cross-region inference (required for claude!)
+  (setq gptel-bedrock--model-ids
+	;; https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html
+	'((claude-sonnet-4-20250514    . "us.anthropic.claude-sonnet-4-20250514-v1:0")
+	  (claude-opus-4-20250514      . "us.anthropic.claude-opus-4-20250514-v1:0")
+	  (claude-3-7-sonnet-20250219  . "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
+	  (claude-3-5-sonnet-20241022  . "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
+	  (claude-3-5-sonnet-20240620  . "us.anthropic.claude-3-5-sonnet-20240620-v1:0")
+	  (claude-3-5-haiku-20241022   . "us.anthropic.claude-3-5-haiku-20241022-v1:0")
+	  (claude-3-opus-20240229      . "us.anthropic.claude-3-opus-20240229-v1:0")
+	  (claude-3-sonnet-20240229    . "us.anthropic.claude-3-sonnet-20240229-v1:0")
+	  (claude-3-haiku-20240307     . "us.anthropic.claude-3-haiku-20240307-v1:0")
+	  (mistral-7b                  . "mistral.mistral-7b-instruct-v0:2")
+	  (mistral-8x7b                . "mistral.mixtral-8x7b-instruct-v0:1")
+	  (mistral-large-2402          . "mistral.mistral-large-2402-v1:0")
+	  (mistral-large-2407          . "mistral.mistral-large-2407-v1:0")
+	  (mistral-small-2402          . "mistral.mistral-small-2402-v1:0")
+	  (llama-3-8b                  . "meta.llama3-8b-instruct-v1:0")
+	  (llama-3-70b                 . "meta.llama3-70b-instruct-v1:0")
+	  (llama-3-1-8b                . "meta.llama3-1-8b-instruct-v1:0")
+	  (llama-3-1-70b               . "meta.llama3-1-70b-instruct-v1:0")
+	  (llama-3-1-405b              . "meta.llama3-1-405b-instruct-v1:0")
+	  (llama-3-2-1b                . "meta.llama3-2-1b-instruct-v1:0")
+	  (llama-3-2-3b                . "meta.llama3-2-3b-instruct-v1:0")
+	  (llama-3-2-11b               . "meta.llama3-2-11b-instruct-v1:0")
+	  (llama-3-2-90b               . "meta.llama3-2-90b-instruct-v1:0")
+	  (llama-3-3-70b               . "meta.llama3-3-70b-instruct-v1:0"))
+	)
+
+  (setq n/gptel-bedrock
+	(gptel-make-bedrock "bedrock"
+	  :region "us-east-1"
+	  :stream t
+	  ))
+
   (setq gptel-temperature nil) ; do not override any temperature settings on the backend!!
+
+  (defun n/gptel-set-temperature ()
+    "Prompt the user for a number and set gptel-temperature to that number.
+If the user inputs 'nil' or presses Enter without input, set gptel-temperature to nil."
+    (interactive)
+    (let ((input (read-string "Enter temperature (or 'nil' to unset): " nil nil nil)))
+      (if (or (string= input "nil") (string-empty-p input))
+	  (setq gptel-temperature nil)
+	(let ((temp (string-to-number input)))
+	  (if (numberp temp)
+	      (setq gptel-temperature temp)
+	    (message "Invalid input. Please enter a number or 'nil'."))))))
   
   (setopt gptel-model 'google/gemini-2.5-flash-preview-05-20:thinking
 	  gptel-backend n/gptel-openrouter)
@@ -216,115 +266,9 @@ by isolating the specified parameters for each request."
 		gptel-model model)
 	  (message "Switched to %s" selected)))))
 
-  (defun n/gptel-context-insert-buffer-string (buffer contexts)
-    "Insert at point a context string from all CONTEXTS in BUFFER."
-    (dolist (context contexts)
-      (let* ((start (overlay-start context))
-	     (end (overlay-end context))
-	     (content (with-current-buffer buffer
-			(buffer-substring-no-properties start end)))
-	     (start-line (with-current-buffer buffer
-			   (line-number-at-pos start t)))
-	     (end-line (with-current-buffer buffer
-			 (line-number-at-pos end t)))
-	     (mode-name (gptel--strip-mode-suffix 
-			 (buffer-local-value 'major-mode buffer))))
-	
-	;; Insert header with filename and line numbers
-	(insert (format "```%s %s:%d-%d\n"
-			mode-name
-			(buffer-name buffer)
-			start-line
-			end-line))
-	
-	;; Insert the content
-	(insert content)
-	
-	;; Close the code block
-	(insert "\n```\n\n"))))
-
-  (defun n/gptel-context-insert-file-string (path)
-    "Insert at point the contents of the file at PATH as context."
-    (insert (format "%s:" (file-name-nondirectory path))
-            "\n\n```\n")
-    (insert-file-contents path)
-    (goto-char (point-max))
-    (insert "\n```\n"))
-
-  (defun n/gptel-context-string (context-alist)
-    "Format the aggregated gptel context as annotated markdown fragments.
-
-Returns a string.  CONTEXT-ALIST is a structure containing
-context overlays, see `gptel-context--alist'."
-    (with-temp-buffer
-      (cl-loop for (buf . ovs) in context-alist
-               if (bufferp buf)
-               do (n/gptel-context-insert-buffer-string buf ovs)
-               else if (not (plist-get ovs :mime))
-               do (n/gptel-context-insert-file-string buf) end
-               do (insert "\n\n")
-               finally do
-               (skip-chars-backward "\n\t\r ")
-               (delete-region (point) (point-max))
-               (unless (bobp)
-		 (goto-char (point-min))
-		 (insert "Request context:\n\n"))
-               finally return
-               (and (> (buffer-size) 0)
-                    (buffer-string)))))
-
-  (defun n/gptel-context-wrap-function (message contexts)
-    "Add CONTEXTS to MESSAGE.
-
-MESSAGE is usually either the system message or the user prompt.
-The accumulated context from CONTEXTS is appended or prepended to
-it, respectively."
-    ;; Append context before/after system message.
-    (let ((context-string (gptel-context--string contexts)))
-      (if (> (length context-string) 0)
-          (pcase-exhaustive gptel-use-context
-            ('system (concat message "\n\n" context-string))
-            ('user   (concat context-string "\n\n" message))
-            ('nil    message))
-	message)))
-
-  (setopt gptel-context-wrap-function #'n/gptel-context-wrap-function)
+  ;; get rid of prefix and change face of gptel responses instead
+  (setf (alist-get 'markdown-mode gptel-prompt-prefix-alist) "")
+  (setf (alist-get 'text-mode gptel-prompt-prefix-alist) "")
   )
-
-;; get rid of prefix and change face of gptel responses instead
-(setf (alist-get 'markdown-mode gptel-prompt-prefix-alist) "")
-(setf (alist-get 'text-mode gptel-prompt-prefix-alist) "")
-
-;; Change face of gptel responses
-(defface gptel-response-face
-  '((((background dark)  (min-colors 88)) :background "gray9" :extend t)
-    (((background light) (min-colors 88)) :background "alice blue" :extend t)
-    (t :inherit mode-line))
-  "Face used to highlight gptel responses."
-  :group 'custom-faces)
-
-;; Font-lock matcher for 'gptel property
-(defun gptel-font-lock-matcher (limit)
-  "Font-lock matcher for text with 'gptel property up to LIMIT."
-  (let (start end)
-    (while (and (< (point) limit)
-                ;; Match any non-nil 'gptel property
-                (setq start (next-single-property-change (point) 'gptel nil limit))
-                (get-text-property start 'gptel))
-      (setq end (or (next-single-property-change start 'gptel nil limit) limit))
-      (put-text-property start end 'font-lock-face 'gptel-response-face)
-      (goto-char end))
-    nil))
-
-;; Add the matcher to font-lock globally
-(add-hook 'font-lock-mode-hook
-          (lambda ()
-            (font-lock-add-keywords nil
-                                    '((gptel-font-lock-matcher . gptel-response-face))
-                                    'append)))
-
-(add-hook 'gptel-post-stream-hook 'font-lock-update)
-
-
 
 ;;; llm.el ends here

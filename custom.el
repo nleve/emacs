@@ -1,10 +1,12 @@
+;; -*- lexical-binding: t; -*-
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("bbb13492a15c3258f29c21d251da1e62f1abb8bbd492386a673dcfab474186af"
+   '("01f347a923dd21661412d4c5a7c7655bf17fb311b57ddbdbd6fce87bd7e58de6"
+     "bbb13492a15c3258f29c21d251da1e62f1abb8bbd492386a673dcfab474186af"
      "7fd8b914e340283c189980cd1883dbdef67080ad1a3a9cc3df864ca53bdc89cf"
      "aec7b55f2a13307a55517fdf08438863d694550565dee23181d2ebd973ebd6b8"
      "e13beeb34b932f309fb2c360a04a460821ca99fe58f69e65557d6c1b10ba18c7"
@@ -15,25 +17,22 @@
      default))
  '(js-indent-level 2)
  '(package-selected-packages
-   '(all-the-icons all-the-icons-dired bui centered-window company-box
-		   consult-eglot consult-project-extra corfu diminish
-		   dired-sidebar doom-modeline doom-themes dtrt-indent
-		   eat eldoc-box elixir-ts-mode embark-consult
-		   evil-collection evil-goggles
-		   evil-textobj-tree-sitter exec-path-from-shell
-		   eyebrowse flycheck gcmh general git-gutter-fringe
-		   goggles gptel graphviz-dot-mode llm magit
-		   marginalia mini-frame mlscroll nerd-icons-corfu
-		   nerd-icons-dired obsidian orderless org-bullets
-		   pdf-tools plz popper pyvenv rainbow-delimiters
-		   request smooth-scrolling spacemacs-theme
-		   spacious-padding spinner sticky-scroll
-		   sticky-scroll-mode tabspaces treemacs treesit-auto
-		   ultra-scroll vertico vterm zig-mode))
+   '(ace-window all-the-icons-dired centered-window company consult-eglot
+                consult-project-extra diff-hl diminish dired-sidebar
+                doom-modeline doom-themes dtrt-indent eldoc-box
+                embark-consult evil-collection evil-goggles
+                exec-path-from-shell gcmh general gptel magit
+                marginalia markdown-mode nerd-icons-dired orderless
+                org-bullets pdf-tools pet popper request
+                spacemacs-theme tabspaces tree-sitter-langs
+                treesit-auto ultra-scroll vertico vertico-posframe
+                vscode-icon vterm zig-mode))
+ '(package-vc-selected-packages
+   '((ultra-scroll :url "https://github.com/jdtsmith/ultra-scroll")))
  '(spacious-padding-widths
    '(:internal-border-width 10 :header-line-width 4 :mode-line-width 3
-			    :tab-width 4 :right-divider-width 0
-			    :scroll-bar-width 8 :fringe-width 0)))
+                            :tab-width 4 :right-divider-width 0
+                            :scroll-bar-width 8 :fringe-width 0)))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.

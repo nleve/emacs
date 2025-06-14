@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (setenv "LSP_USE_PLISTS" "true")
 
 ; Make it minimal-looking.
@@ -19,5 +20,5 @@
 
 ;; make it a bigger window
 (setq default-frame-alist
-       '((width . 256)    ; characters in a line
+       '((width . 140)    ; characters in a line
         (height . 72))) ; number of lines

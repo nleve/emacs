@@ -1,4 +1,4 @@
-;;; init.el --- emacs config
+;;; init.el --- emacs config  -*- lexical-binding: t; -*-
 ;;; Commentary:
 ;
 ; This is my init.el.  There are many like it, but this one is mine.
@@ -52,6 +52,12 @@
 
 ; fix silly defaults
 (setopt sentence-end-double-space nil)
+;; Auto refresh buffers
+(global-auto-revert-mode 1)
+
+;; Also auto refresh dired, but be quiet about it
+(setq global-auto-revert-non-file-buffers t)
+(setq auto-revert-verbose nil)
 
 ;; TODO use something like this to switch common modes quick
 ;; (defvar-keymap prot-prefix-mode-map
@@ -153,10 +159,17 @@
 
 ;; Env vars
 (use-package exec-path-from-shell :ensure
-  :init
+  :config
+  (nconc exec-path-from-shell-variables '("PATH"
+                                          "OPENROUTER_KEY"
+                                          "DB_CONNECTION_STRING"
+                                          "CLAUDE_API_KEY"
+                                          "TABBYAPI_KEY"
+                                          "GITLAB_API_KEY"
+                                          "AWS_PROFILE"
+                                          "LOCAL_API_URL"))
   (exec-path-from-shell-initialize)
-  )
-
+)
 ;; Add padding to make everything look more comfy
 ;; (use-package spacious-padding :ensure
 ;;  :config
@@ -201,8 +214,8 @@
   (define-key evil-motion-state-map [mouse-2] nil)
 
   ;; Add some quick fwd / back keys
-  (enable-smooth-scroll-for-function evil-next-visual-line)
-  (enable-smooth-scroll-for-function evil-previous-visual-line)
+  ;(enable-smooth-scroll-for-function evil-next-visual-line)
+  ;(enable-smooth-scroll-for-function evil-previous-visual-line)
   ;; Make horizontal movement cross wrapped lines
   (setq-default evil-cross-lines t)
   )
@@ -286,13 +299,44 @@
 (use-package elixir-ts-mode
   :ensure)
 
+
 (use-package treesit-auto
   :custom
   (treesit-auto-install 'prompt)
   :config
+  (setq my/fixed-treesit-recipe-list
+  `(,(make-treesit-auto-recipe
+      :lang 'c
+      :ts-mode 'c-ts-mode
+      :remap 'c-mode
+      :revision "v0.23.3"
+      :url "https://github.com/tree-sitter/tree-sitter-c"
+      :ext "\\.c\\'")
+    ,(make-treesit-auto-recipe
+      :lang 'lua
+      :ts-mode 'lua-ts-mode
+      :remap 'lua-mode
+      :revision "v0.3.0"
+      :url "https://github.com/tree-sitter-grammars/tree-sitter-lua"
+      :ext "\\.lua\\'")
+    ,(make-treesit-auto-recipe
+      :lang 'rust
+      :ts-mode 'rust-ts-mode
+      :remap 'rust-mode
+      :revision "v0.23.3"
+      :url "https://github.com/tree-sitter/tree-sitter-rust"
+      :ext "\\.rs\\'")))
+
+  (setq treesit-auto-recipe-list (append my/fixed-treesit-recipe-list treesit-auto-recipe-list))
   (treesit-auto-add-to-auto-mode-alist 'all)
-  (delete 'janet treesit-auto-langs) ;; fails to compile for some reason - yeet
+  (delete 'janet treesit-auto-langs)
+  (delete 'bibtex treesit-auto-langs)
+  (delete 'latex treesit-auto-langs)
+  (delete 'magik treesit-auto-langs)
+  (delete 'markdown treesit-auto-langs)
   (global-treesit-auto-mode))
+
+
 
 ;; LSP
 (use-package eglot
@@ -307,12 +351,21 @@
 	 ("C-c c r" . eglot-rename)
 	 ("C-c c f" . eglot-format))
   )
+(use-package vscode-icon
+  :ensure t
+  :commands (vscode-icon-for-file))
 
-;; used once in a while for file nav
-;(use-package treemacs :ensure :defer)
+(use-package nerd-icons :defer t)
+(use-package nerd-icons-dired
+  :commands (nerd-icons-dired-mode))
+
 (use-package dired-sidebar
   :ensure
-  :commands (dired-sidebar-toggle-sidebar))
+  :commands (dired-sidebar-toggle-sidebar)
+  :config
+  (setq dired-sidebar-theme 'nerd-icons)
+  (setq dired-sidebar-use-term-integration t)
+  )
 
 ;; tell me what's wrong
 (add-hook 'prog-mode-hook #'flymake-mode)
@@ -434,6 +487,8 @@
    "c"    '(evil-avy-goto-char-timer :wk "goto-char")
    ;; Ace
    "a"    '(ace-select-window t :wk "ace")
+   "s"    '(ace-swap-window t :wk "ace swap")
+   "d"    '(ace-delete-window t :wk "ace delete")
    ;; Help
    "h"    '(:ignore t :wk "help and errors")
    "hh"   '(eldoc-box-help-at-point :wk "eldoc box help at point")
@@ -466,20 +521,20 @@
    ".a"   '(gptel-add :wk "gptel-add")
    ".c"   '(gptel :wk "chat")
    ".x"   '(gptel-abort :wk "abort")
+   ".s"   '(n/gptel-switch-model :wk "switch model")
+   ".t"   '(n/gptel-set-temperature :wk "set temp")
    ;; embark
    ","   '(embark-act :wk "embark-dwim")
-   ;; eat
-   "t"   '(:ignore t "terminal")
-   "tt"  '(eat :wk "open terminal")
-   "tT"  '(eat-other-window :wk "open terminal ow")
-   "tp"  '(eat-project :wk "project terminal")
-   "tP"  '(eat-project-other-window :wk "project terminal o
-w")
-   "tn"  '((lambda () (interactive) (let ((current-prefix-arg '(4))) (call-interactively 'eat))) :wk "new terminal")
+   ;; vterm
+   "t"    '(:ignore t :wk "terminal")
+   "tt"   '(vterm :wk "open terminal")
+   "tn"   '(n/named-vterm :wk "named terminal")
+   "tp"   '(n/vterm-project-root :wk "project terminal")
    ;; Other
    "i"   '((lambda () (interactive)(find-file "~/.config/emacs/init.el")) :wk "edit init.el")
    "n"   '((lambda () (interactive)(find-file "~/notebook.org")) :wk "edit notebook.org")
    "f"   '(find-file :wk "find file")
+   "F"   '(project-dired :wk "project-dired")
    "TAB" '(dired-sidebar-toggle-sidebar :wk "dired sidebar")
    "'"   '(comment-or-uncomment-region :wk "toggle comment")
    )
@@ -494,12 +549,41 @@ w")
 (use-package ace-window :ensure :defer :diminish)
 
 ;; Term
-(use-package eat :ensure :defer
-  :custom
-  (eat-kill-buffer-on-exit t)
-  (process-adaptive-read-buffering nil) ; makes EAT a lot quicker!
-  :init
-  (add-hook 'eat-mode-hook 'evil-insert-state)
+(use-package vterm
+  :config
+  (setq vterm-timer-delay 0.01)
+  (setq vterm-max-scrollback 100000)
+  (defun n/named-vterm (vterm-name)
+    "Generate a terminal with buffer name TERM-NAME."
+    (interactive "sTerminal purpose: ")
+    (vterm (concat "term-" vterm-name)))
+
+  (defun n/vterm-project-root ()
+    "Open a new vterm instance at the current project's root.
+
+The new vterm buffer is named \"vterm-<PROJECT_NAME>\". If a
+buffer with that name already exists, vterm will create a unique
+name (e.g., \"vterm-<PROJECT_NAME><2>\").
+
+This command uses the built-in `project.el` to find the
+project root and name. It signals an error if the current
+buffer is not part of a recognized project."
+    (interactive)
+    (let ((current-project (project-current)))
+      (if (not current-project)
+              (user-error "Not in a project. `project.el` could not find a root.")
+              ;; We have a project, so we can proceed.
+              (let* ((project-name (project-name current-project))
+                     (project-root (project-root current-project))
+                     (buffer-name (format "vterm-%s" project-name)))
+                ;; Let-bind `default-directory` to ensure the shell starts in the project root.
+                ;; Let-bind `vterm-buffer-name-string` to set the desired base buffer name.
+                (let ((default-directory project-root)
+                      (vterm-buffer-name-string buffer-name))
+                  (vterm)
+                  ;; `vterm` automatically switches to the newly created buffer.
+                  ;; We can also display a confirmation in the echo area.
+                  (message "Opened vterm for project '%s' in %s" project-name project-root))))))
   )
 
 (use-package markdown-mode
@@ -533,6 +617,15 @@ w")
   :init
   (vertico-mode 1)
   )
+
+(global-set-key (kbd "s-M-l") 'enlarge-window-horizontally)
+(global-set-key (kbd "s-M-h") 'shrink-window-horizontally)
+(global-set-key (kbd "s-M-j") 'shrink-window)
+(global-set-key (kbd "s-M-k") 'enlarge-window)
+(global-set-key (kbd "s-M-L") (lambda () (interactive) (enlarge-window-horizontally 5)))
+(global-set-key (kbd "s-M-H") (lambda () (interactive) (shrink-window-horizontally 5)))
+(global-set-key (kbd "s-M-J") (lambda () (interactive) (shrink-window 5)))
+(global-set-key (kbd "s-M-K") (lambda () (interactive) (enlarge-window 5)))
 
 ;; show marginalia for minibuffer completions
 (use-package marginalia
@@ -572,12 +665,6 @@ w")
 ;; embark integration with consult
 (use-package embark-consult
   :ensure)
-
-;(use-package mlscroll
-;  :ensure t
-;  :config
-;  (mlscroll-mode)
-;  )
 
 (use-package pet
   :config
@@ -642,6 +729,17 @@ w")
   (evil-goggles-mode)
   (evil-goggles-use-diff-faces))
 
+(use-package dtrt-indent
+  :config
+  (dtrt-indent-global-mode 1)
+  )
+
+(use-package bonk
+  :load-path "~/src/bonk"
+  :ensure nil)
+
+(recentf-mode 1)
+
 ;; Do this for yanked regions too.
 (require 'pulse)
 (setq pulse-flag t) ; enable animation for non-GUI frames
@@ -703,9 +801,7 @@ w")
 (unless (server-running-p)
   (server-start))
 
-(desktop-save-mode 1)
-
-(dtrt-indent-global-mode 1)
+;(desktop-save-mode 1)
 
 (provide 'init)
 ;;; init.el ends here

@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (use-package org
   :config
   (add-hook 'org-mode-hook 'visual-line-mode)
