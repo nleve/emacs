@@ -5,7 +5,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("01f347a923dd21661412d4c5a7c7655bf17fb311b57ddbdbd6fce87bd7e58de6"
+   '("0325a6b5eea7e5febae709dab35ec8648908af12cf2d2b569bedc8da0a3a81c1"
+     "01f347a923dd21661412d4c5a7c7655bf17fb311b57ddbdbd6fce87bd7e58de6"
      "bbb13492a15c3258f29c21d251da1e62f1abb8bbd492386a673dcfab474186af"
      "7fd8b914e340283c189980cd1883dbdef67080ad1a3a9cc3df864ca53bdc89cf"
      "aec7b55f2a13307a55517fdf08438863d694550565dee23181d2ebd973ebd6b8"
@@ -17,13 +18,13 @@
      default))
  '(js-indent-level 2)
  '(package-selected-packages
-   '(ace-window all-the-icons-dired centered-window company consult-eglot
-                consult-project-extra diff-hl diminish dired-sidebar
-                doom-modeline doom-themes dtrt-indent eldoc-box
-                embark-consult evil-collection evil-goggles
+   '(ace-window all-the-icons-dired centered-window company consult-dir
+                consult-eglot consult-project-extra diff-hl diminish
+                dired-sidebar doom-modeline doom-themes dtrt-indent
+                eldoc-box embark-consult evil-collection evil-goggles
                 exec-path-from-shell gcmh general gptel magit
                 marginalia markdown-mode nerd-icons-dired orderless
-                org-bullets pdf-tools pet popper request
+                org-bullets pdf-tools pet popper prog-mode request
                 spacemacs-theme tabspaces tree-sitter-langs
                 treesit-auto ultra-scroll vertico vertico-posframe
                 vscode-icon vterm zig-mode))

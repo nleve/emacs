@@ -17,89 +17,6 @@
 ;; Load auto-customized vars & faces
 (load custom-file)
 
-;; eliminate gc stutter. incredible
-(use-package gcmh :ensure :diminish
-  :config
-  (setq gcmh-idle-delay 3)
-  :init
-  (gcmh-mode))
-
-;; Font
-;(set-frame-font (font-spec :family "JetBrainsMono Nerd Font" :size 14) nil t)
-;(set-frame-font (font-spec :family "Hack" :size 15) nil t)
-;(set-frame-font (font-spec :family "Iosevka Nerd Font" :size 17) nil t)
-;(set-frame-font (font-spec :family "Source Code Pro" :size 14) nil t)
-(defvar my/fixed-font-spec '(:family "JetBrainsMono Nerd Font" :size 15))
-(defvar my/variable-font-spec '(:family "Noto Sans" :size 16 :weight light))
-(set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
-(set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
-(set-face-attribute 'variable-pitch nil :font (apply #'font-spec my/variable-font-spec))
-
- (custom-theme-set-faces
-   'user
-   `(variable-pitch ((t ,my/variable-font-spec)))
-   `(org-default ((t ,my/variable-font-spec)))
-   `(fixed-pitch ((t ,my/fixed-font-spec)))
-   `(default ((t ,my/fixed-font-spec)))
-   )
-
-(dolist (face '(default fixed-pitch))
-  (set-face-attribute `,face nil :font (apply #'font-spec my/fixed-font-spec)))
-
-; Turn on some things I like.
-(add-hook 'prog-mode-hook 'display-line-numbers-mode)
-(add-hook 'prog-mode-hook 'hl-line-mode)
-
-; fix silly defaults
-(setopt sentence-end-double-space nil)
-;; Auto refresh buffers
-(global-auto-revert-mode 1)
-
-;; Also auto refresh dired, but be quiet about it
-(setq global-auto-revert-non-file-buffers t)
-(setq auto-revert-verbose nil)
-
-;; TODO use something like this to switch common modes quick
-;; (defvar-keymap prot-prefix-mode-map
-;;   :doc "Prefix keymap for minor mode toggles."
-;;   :name "Toggle"
-;;   :prefix 'prot-prefix-mode
-;;   "f" #'flymake-mode
-;;   "h" #'hl-line-mode
-;;   "k" #'keycast-mode-line-mode
-;;   "l" #'logos-focus-mode
-;;   "m" #'menu-bar-mode
-;;   "n" #'display-line-numbers-mode
-;;   "t" #'toggle-truncate-lines
-;;   "s" #'spacious-padding-mode
-;;   "r" #'rainbow-mode
-;;   "v" #'variable-pitch-mode)
-
-; turn off middle-click paste
-(global-unset-key [mouse-2])
-(global-unset-key [mouse-3])
-(global-set-key [mouse-3] 'eglot-code-actions-at-mouse)
-(global-set-key [down-mouse-3] 'mouse-drag-drag)
-
-;; UTF-8 files by default
-(prefer-coding-system 'utf-8)
-(set-default-coding-systems 'utf-8)
-(set-language-environment 'utf-8)
-(set-selection-coding-system 'utf-8)
-
-; Eldoc tweaks
-;(setq eldoc-echo-area-display-truncation-message nil)
-;(setq eldoc-echo-area-use-multiline-p nil)
-(setq eldoc-display-functions '(eldoc-display-in-buffer))
-;(setq eldoc-display-functions '(eldoc-display-in-buffer))
-(setq eldoc-idle-delay 0.1)
-
-;; Global keybinds
-(global-set-key (kbd "s-l") 'evil-window-right)
-(global-set-key (kbd "s-h") 'evil-window-left)
-(global-set-key (kbd "s-j") 'evil-window-down)
-(global-set-key (kbd "s-k") 'evil-window-up)
-
 ;; Package setup
 (require 'package)
 (setq package-enable-at-startup nil)
@@ -116,16 +33,105 @@
 (setq use-package-always-ensure t)
 (use-package diminish)
 
+;; eliminate gc stutter. incredible
+(use-package gcmh :ensure :diminish
+  :config
+  (setq gcmh-idle-delay 3)
+  :init
+  (gcmh-mode))
+
+(use-package emacs
+  :init
+  ;; Font
+  ;(set-frame-font (font-spec :family "JetBrainsMono Nerd Font" :size 14) nil t)
+  ;(set-frame-font (font-spec :family "Hack" :size 15) nil t)
+  ;(set-frame-font (font-spec :family "Iosevka Nerd Font" :size 17) nil t)
+  ;(set-frame-font (font-spec :family "Source Code Pro" :size 14) nil t)
+  ;(defvar my/fixed-font-spec '(:family "JetBrainsMono Nerd Font" :size 15))
+  ;(defvar my/fixed-font-spec '(:family "Hack" :size 15))
+  (setq my/fixed-font-spec '(:family "IosevkaTerm Nerd Font" :size 16))
+  (defvar my/variable-font-spec '(:family "Noto Sans" :size 16 :weight light))
+  (set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
+  (set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
+  (set-face-attribute 'variable-pitch nil :font (apply #'font-spec my/variable-font-spec))
+
+  (custom-theme-set-faces
+   'user
+   `(variable-pitch ((t ,my/variable-font-spec)))
+   `(org-default ((t ,my/variable-font-spec)))
+   `(fixed-pitch ((t ,my/fixed-font-spec)))
+   `(default ((t ,my/fixed-font-spec)))
+   )
+
+  (dolist (face '(default fixed-pitch))
+    (set-face-attribute `,face nil :font (apply #'font-spec my/fixed-font-spec)))
+
+  ;; Turn on some things I like.
+  (add-hook 'prog-mode-hook 'display-line-numbers-mode)
+  (add-hook 'prog-mode-hook 'hl-line-mode)
+  ;; tell me what's wrong
+  (add-hook 'prog-mode-hook #'flymake-mode)
+
+  ;; Setup window management rules
+  ;(setq display-buffer-alist '((".*" display-buffer-same-window)))
+
+  ; fix silly defaults
+  (setopt sentence-end-double-space nil)
+  ;; Auto refresh buffers
+  (global-auto-revert-mode 1)
+
+  ;; Also auto refresh dired, but be quiet about it
+  (setq global-auto-revert-non-file-buffers t)
+  (setq auto-revert-verbose nil)
+
+  ;; turn off middle-click paste
+  (global-unset-key [mouse-2])
+  (global-unset-key [mouse-3])
+  (global-set-key [mouse-3] 'eglot-code-actions-at-mouse)
+  (global-set-key [down-mouse-3] 'mouse-drag-drag)
+
+  ;; UTF-8 files by default
+  (prefer-coding-system 'utf-8)
+  (set-default-coding-systems 'utf-8)
+  (set-language-environment 'utf-8)
+  (set-selection-coding-system 'utf-8)
+
+  ;; Global keybinds
+  (global-set-key (kbd "s-l") 'evil-window-right)
+  (global-set-key (kbd "s-h") 'evil-window-left)
+  (global-set-key (kbd "s-j") 'evil-window-down)
+  (global-set-key (kbd "s-k") 'evil-window-up)
+
+
+  ; Eldoc tweaks
+  ;(setq eldoc-echo-area-display-truncation-message nil)
+  ;(setq eldoc-echo-area-use-multiline-p nil)
+  (setq eldoc-display-functions '(eldoc-display-in-buffer))
+  ;(setq eldoc-display-functions '(eldoc-display-in-buffer))
+  (setq eldoc-idle-delay 0.1)
+
+  ;; Manually customized variables
+  (setq scroll-preserve-screen-position nil) ; fix scrolling?
+  (setq make-backup-files nil) ; stop creating backup~ files
+  (setq auto-save-default nil) ; stop creating #autosave# files
+  (setq create-lockfiles nil)  ; Temporary to make react dev server not puke...?
+
+  ;; Fix console mouse behavior
+  (unless (display-graphic-p) (xterm-mouse-mode))
+
+  (put 'dired-find-alterate-file 'disabled nil)
+  (setq dired-kill-when-opening-new-dired-buffer t)
+
+  (recentf-mode 1)
+  )
+
 (use-package request
   :ensure)
 
-;; Theme & Appearance
-(use-package spacemacs-theme
-  :init
-  (load-theme 'spacemacs-dark)
-  )
 (use-package doom-themes
   :init
+  (load-theme 'doom-one)
+  ;(load-theme 'doom-Iosvkem)
   ;(setq doom-ir-black-brighter-comments 't)
   ;(load-theme 'doom-monokai-spectrum)
   ;(load-theme 'modus-operandi)
@@ -133,14 +139,6 @@
   ;(load-theme 'gruber-darker)
   ;(load-theme 'doom-dark+)
   ;(load-theme 'modus-vivendi-tinted)
-  (custom-set-faces
-   ;; Set a more legible background color for code blocks
-   ;'(markdown-code-face ((t (:background "#292c33"))))
-   ;'(org-code ((t (:background "#292c33"))))
-   ;'(org-block ((t (:background "#292c33"))))
-   ;'(org-block-begin-line ((t (:background "#292c33"))))
-   ;'(org-block-end-line ((t (:background "#292c33"))))
-   )
   )
 
 ;; Fast smooth-scrolling
@@ -170,20 +168,6 @@
                                           "LOCAL_API_URL"))
   (exec-path-from-shell-initialize)
 )
-;; Add padding to make everything look more comfy
-;; (use-package spacious-padding :ensure
-;;  :config
-;;  (setq spacious-padding-widths
-;; 	'( :internal-border-width 10
-;; 	   :header-line-width 4
-;; 	   :mode-line-width 3
-;; 	   :tab-width 5
-;; 	   :right-divider-width 1
-;; 	   :scroll-bar-width 8
-;; 	   :fringe-width 10))
-;;  :init
-;;  (spacious-padding-mode)
-;;  )
 
 ;; Evil
 (use-package evil
@@ -213,9 +197,6 @@
   (define-key evil-visual-state-map [mouse-2] nil)
   (define-key evil-motion-state-map [mouse-2] nil)
 
-  ;; Add some quick fwd / back keys
-  ;(enable-smooth-scroll-for-function evil-next-visual-line)
-  ;(enable-smooth-scroll-for-function evil-previous-visual-line)
   ;; Make horizontal movement cross wrapped lines
   (setq-default evil-cross-lines t)
   )
@@ -263,21 +244,6 @@
   (company-tooltip-align-annotations 't)
   (company-minimum-prefix-length 1))
 
-;; someday maybe I'll use corfu instead of company
-;; (use-package corfu
-;;   :ensure
-;;   :config
-;;   (global-corfu-mode)
-;;   (setq corfu-auto t
-;; 	corfu-quit-no-match 'separator)
-;;   )
-
-;; (use-package nerd-icons-corfu
-;;   :ensure
-;;   :config
-;;   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter)
-;;   )
-
 ;; Which Key
 (use-package which-key
   :diminish
@@ -298,7 +264,6 @@
 
 (use-package elixir-ts-mode
   :ensure)
-
 
 (use-package treesit-auto
   :custom
@@ -336,8 +301,6 @@
   (delete 'markdown treesit-auto-langs)
   (global-treesit-auto-mode))
 
-
-
 ;; LSP
 (use-package eglot
   :hook (prog-mode . eglot-ensure)
@@ -351,9 +314,6 @@
 	 ("C-c c r" . eglot-rename)
 	 ("C-c c f" . eglot-format))
   )
-(use-package vscode-icon
-  :ensure t
-  :commands (vscode-icon-for-file))
 
 (use-package nerd-icons :defer t)
 (use-package nerd-icons-dired
@@ -366,9 +326,6 @@
   (setq dired-sidebar-theme 'nerd-icons)
   (setq dired-sidebar-use-term-integration t)
   )
-
-;; tell me what's wrong
-(add-hook 'prog-mode-hook #'flymake-mode)
 
 (use-package eldoc-box
   :defer
@@ -435,8 +392,6 @@
    "" nil
    ;; "/" '(counsel-rg :wk "riggrep") ; need counsel
    "SPC" '(execute-extended-command :wk "M-x")
-   ;; bonk
-   "["   '(bonk-map :wk "bonk")
    ;; eval
    "eb"  '(eval-buffer :wk "eval-buffer")
    "er"  '(eval-region :wk "eval-region")
@@ -513,12 +468,14 @@
    "/l"   '(consult-focus-lines :wk "focus lines")
    "/e"   '(consult-flymake :wk "consult-flymake")
    "/m"   '(consult-line-multi :wk "consult-line-multi")
+   "/i"   '(consult-imenu :wk "consult-imenu")
    "p"   '(consult-project-extra-find :wk "project find")
    "P"   '(consult-project-extra-find-other-window :wk "project find ow")
    ;; gptel
    "."    '(:ignore t :wk "gptel")
    ".."   '(gptel-menu :wk "gptel-menu")
    ".a"   '(gptel-add :wk "gptel-add")
+   ".f"   '(gptel-add-file :wk "gptel-add file")
    ".c"   '(gptel :wk "chat")
    ".x"   '(gptel-abort :wk "abort")
    ".s"   '(n/gptel-switch-model :wk "switch model")
@@ -594,6 +551,7 @@ buffer is not part of a recognized project."
   (add-hook 'markdown-mode-hook 'visual-line-mode)
   (add-hook 'markdown-mode-hook 'variable-pitch-mode)
   (add-hook 'markdown-mode-hook 'toggle-word-wrap)
+  (add-hook 'markdown-mode-hook 'markdown-toggle-markup-hiding)
   )
 
 (use-package pdf-tools :ensure :defer)
@@ -675,6 +633,7 @@ buffer is not part of a recognized project."
 	 ("s-]"   . popper-cycle)
 	 ("M-p" . popper-toggle-type))
   :init
+
   (setq popper-reference-buffers
 	'("\\*eldoc" help-mode)
 	)
@@ -734,11 +693,12 @@ buffer is not part of a recognized project."
   (dtrt-indent-global-mode 1)
   )
 
-(use-package bonk
-  :load-path "~/src/bonk"
-  :ensure nil)
-
-(recentf-mode 1)
+(use-package consult-dir
+  :ensure t
+  :bind (("C-x C-d" . consult-dir)
+         :map vertico-map
+         ("C-x C-d" . consult-dir)
+         ("C-x C-j" . consult-dir-jump-file)))
 
 ;; Do this for yanked regions too.
 (require 'pulse)
@@ -755,12 +715,6 @@ buffer is not part of a recognized project."
 
 ;; Add the new pulsing behavior to evil-yank
 (advice-add 'evil-yank :after #'my/pulse-copied-region)
-
-;;; Manually customized variables
-(setq scroll-preserve-screen-position nil) ; fix scrolling?
-(setq make-backup-files nil) ; stop creating backup~ files
-(setq auto-save-default nil) ; stop creating #autosave# files
-(setq create-lockfiles nil)  ; Temporary to make react dev server not puke...?
 
 ;; Custom variable for Esc clearing (if not already defined)
 (defcustom eldoc-box-clear-with-esc nil
@@ -786,11 +740,31 @@ buffer is not part of a recognized project."
       compilation-max-output-line-length nil
       )
 
-;; Fix console mouse behavior
-(unless (display-graphic-p) (xterm-mouse-mode))
-
-(put 'dired-find-alterate-file 'disabled nil)
-(setq dired-kill-when-opening-new-dired-buffer t)
+;; nice function for swapping split windows
+(defun toggle-window-split ()
+  (interactive)
+  (if (= (count-windows) 2)
+      (let* ((this-win-buffer (window-buffer))
+         (next-win-buffer (window-buffer (next-window)))
+         (this-win-edges (window-edges (selected-window)))
+         (next-win-edges (window-edges (next-window)))
+         (this-win-2nd (not (and (<= (car this-win-edges)
+                     (car next-win-edges))
+                     (<= (cadr this-win-edges)
+                     (cadr next-win-edges)))))
+         (splitter
+          (if (= (car this-win-edges)
+             (car (window-edges (next-window))))
+          'split-window-horizontally
+        'split-window-vertically)))
+    (delete-other-windows)
+    (let ((first-win (selected-window)))
+      (funcall splitter)
+      (if this-win-2nd (other-window 1))
+      (set-window-buffer (selected-window) this-win-buffer)
+      (set-window-buffer (next-window) next-win-buffer)
+      (select-window first-win)
+      (if this-win-2nd (other-window 1))))))
 
 ;; set gc-cons-threshold to something more reasonable now that packages are loaded
 (setq gc-cons-threshold 80000000)
