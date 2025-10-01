@@ -1,6 +1,9 @@
 ;;; llm.el --- my llm-related customizations  -*- lexical-binding: t; -*-
 
 ;; gptel
+;; troubleshooting:
+;; Instead of `gptel-send`, use `M-x gptel-send C-u M-x gptel--inspect-query RET`.
+;; (setq gptel-log-level debug)
 (require 'transient)
 
 (use-package gptel
@@ -8,32 +11,6 @@
   :defer
   :config
   (setq gptel-confirm-tool-calls 't)
-
-  ;; unclutter the claude models
-  (defvar n/gptel-anthropic-models
-	'((claude-3-7-sonnet-20250219
-           :description "Hybrid model capable of standard thinking and extended thinking modes"
-           :capabilities (media tool-use cache)
-           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
-           :context-window 200
-           :input-cost 3
-           :output-cost 15
-           :cutoff-date "2025-02")
-          (claude-3-5-sonnet-20241022
-           :description "Highest level of intelligence and capability"
-           :capabilities (media tool-use cache)
-           :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
-           :context-window 200
-           :input-cost 3
-           :output-cost 15
-           :cutoff-date "2024-04")))
-
-  (defvar n/gptel-anthropic
-    (gptel-make-anthropic "Claude"
-      :stream t
-      :key (getenv "CLAUDE_API_KEY")
-      :models n/gptel-anthropic-models)
-    )
 
   (setq n/gptel-tabbyAPI-models
     '((Qwen2.5-Coder-32B-Instruct-exl2-8bpw-8hb) ;; add more options here
@@ -52,23 +29,43 @@
 
   (setq n/gptel-openrouter-models
     '(
-      (google/gemini-2.5-flash-preview-05-20
-       :description "Google's latest workhorse model"
-       :capabilities (media tool-use cache)
+      (google/gemini-2.5-flash
+       :description "Google's workhorse model"
+       :capabilities (media tool-use cache reasoning)
        :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
        :context-window 1000000
        )
-      (google/gemini-2.5-flash-preview-05-20:thinking
-       :description "Google's latest workhorse model with advanced reasoning"
-       :capabilities (media tool-use cache)
-       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
-       :context-window 1000000
-       )
-      (google/gemini-2.5-pro-preview
+      (google/gemini-2.5-pro
        :description "Google's top model with thinking"
-       :capabilities (media tool-use cache)
+       :capabilities (media tool-use cache reasoning)
        :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
        :context-window 1000000
+       )
+      (deepseek/deepseek-r1-0528
+       :capabilities (tool-use cache reasoning)
+       :context-window 128000
+       )
+      (anthropic/claude-sonnet-4.5
+       :capabilities (tool-use media cache)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 1000000
+       )
+      (moonshotai/kimi-k2-0905
+       :capabilities (tool-use reasoning)
+       :context-window 256000
+       )
+      (qwen/qwen3-vl-235b-a22b-instruct
+       :capabilities (tool-use reasoning cache)
+       :context-window 131072
+       )
+      (qwen/qwen3-vl-235b-a22b-thinking
+       :capabilities (tool-use reasoning cache)
+       :context-window 131072
+       )
+      (x-ai/grok-4
+       :capabilities (tool-use media cache)
+       :context-window 256000
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
        )
       ))
 
@@ -96,29 +93,7 @@
   (setq gptel-bedrock--model-ids
 	;; https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html
 	'((claude-sonnet-4-20250514    . "us.anthropic.claude-sonnet-4-20250514-v1:0")
-	  (claude-opus-4-20250514      . "us.anthropic.claude-opus-4-20250514-v1:0")
-	  (claude-3-7-sonnet-20250219  . "us.anthropic.claude-3-7-sonnet-20250219-v1:0")
-	  (claude-3-5-sonnet-20241022  . "us.anthropic.claude-3-5-sonnet-20241022-v2:0")
-	  (claude-3-5-sonnet-20240620  . "us.anthropic.claude-3-5-sonnet-20240620-v1:0")
-	  (claude-3-5-haiku-20241022   . "us.anthropic.claude-3-5-haiku-20241022-v1:0")
-	  (claude-3-opus-20240229      . "us.anthropic.claude-3-opus-20240229-v1:0")
-	  (claude-3-sonnet-20240229    . "us.anthropic.claude-3-sonnet-20240229-v1:0")
-	  (claude-3-haiku-20240307     . "us.anthropic.claude-3-haiku-20240307-v1:0")
-	  (mistral-7b                  . "mistral.mistral-7b-instruct-v0:2")
-	  (mistral-8x7b                . "mistral.mixtral-8x7b-instruct-v0:1")
-	  (mistral-large-2402          . "mistral.mistral-large-2402-v1:0")
-	  (mistral-large-2407          . "mistral.mistral-large-2407-v1:0")
-	  (mistral-small-2402          . "mistral.mistral-small-2402-v1:0")
-	  (llama-3-8b                  . "meta.llama3-8b-instruct-v1:0")
-	  (llama-3-70b                 . "meta.llama3-70b-instruct-v1:0")
-	  (llama-3-1-8b                . "meta.llama3-1-8b-instruct-v1:0")
-	  (llama-3-1-70b               . "meta.llama3-1-70b-instruct-v1:0")
-	  (llama-3-1-405b              . "meta.llama3-1-405b-instruct-v1:0")
-	  (llama-3-2-1b                . "meta.llama3-2-1b-instruct-v1:0")
-	  (llama-3-2-3b                . "meta.llama3-2-3b-instruct-v1:0")
-	  (llama-3-2-11b               . "meta.llama3-2-11b-instruct-v1:0")
-	  (llama-3-2-90b               . "meta.llama3-2-90b-instruct-v1:0")
-	  (llama-3-3-70b               . "meta.llama3-3-70b-instruct-v1:0"))
+	  (claude-opus-4-20250514      . "us.anthropic.claude-opus-4-20250514-v1:0"))
 	)
 
   (setq n/gptel-bedrock
@@ -141,7 +116,7 @@ If the user inputs 'nil' or presses Enter without input, set gptel-temperature t
 	      (setq gptel-temperature temp)
 	    (message "Invalid input. Please enter a number or 'nil'."))))))
   
-  (setopt gptel-model 'google/gemini-2.5-flash-preview-05-20:thinking
+  (setopt gptel-model 'moonshotai/kimi-k2-0905
 	  gptel-backend n/gptel-openrouter)
 
   ;; Get rid of the default backend, it clutters up the model selection
@@ -164,25 +139,20 @@ If the user inputs 'nil' or presses Enter without input, set gptel-temperature t
 
   (setq gptel-default-mode 'markdown-mode)
 
-;;   (defun gptel-request-wrapper (backend model use-tools use-context &rest gptel-args)
-;;     "Wrapper around `gptel-request` that let-binds `gptel-backend', `gptel-model',
-;; `gptel-use-tools', and `gptel-use-context' to isolate requests.
+  (defun n/gptel-display-strategy (buffer alist)
+    "My custom window display strategy for gptel.
+If there's only one window, split it to show BUFFER.
+If there are multiple windows, use the selected one."
+    (if (one-window-p t)
+        ;; Rule 1: If only one window is open, split it horizontally
+        ;; and display the gptel buffer in the new window below.
+        (display-buffer buffer alist)
+      ;; Rule 2: If more than one window is open, display the gptel
+      ;; buffer in the currently active window.
+      (display-buffer-same-window buffer alist)))
 
-;; BACKEND is the value for `gptel-backend', specifying the backend service.
-;; MODEL is the value for `gptel-model', specifying the language model.
-;; USE-TOOLS is the value for `gptel-use-tools', controlling tool usage.
-;; USE-CONTEXT is the value for `gptel-use-context', defining context handling.
-
-;; GPTEL-ARGS are the arguments to pass to `gptel-request', including the optional
-;; PROMPT and keyword arguments like :callback, :buffer, :position, etc.
-
-;; This function ensures that asynchronous calls to multiple models do not interfere
-;; by isolating the specified parameters for each request."
-;;     (let ((gptel-backend backend)
-;;           (gptel-model model)
-;;           (gptel-use-tools use-tools)
-;;           (gptel-use-context use-context))
-;;       (apply 'gptel-request gptel-args)))
+  ;; 2. Set gptel to use your custom function
+  (setq gptel-display-buffer-action '(n/gptel-display-strategy))
 
   (defun n/gptel-request-wrapper (&rest args)
     "Wrapper around `gptel-request` that let-binds `gptel-backend', `gptel-model',
