@@ -338,18 +338,28 @@ by isolating the specified parameters for each request."
         (when (memq val '(response ignore))
           (let* ((bol (point))
                  (eol (line-end-position))
-                 ;; Extend to the beginning of next line to ensure wrapped lines are covered
-                 (overlay-end (min (1+ eol) (point-max)))
+                 ;; Find the actual end of the gptel property on this line
+                 (prop-end (or (next-single-property-change bol 'gptel nil eol) eol))
+                 ;; Include the newline if the property extends to end of line
+                 (overlay-end (if (= prop-end eol)
+                                  (min (1+ eol) (point-max))
+                                prop-end))
                  (fringe-string (propertize " " 'display
                                           `(left-fringe gptel-fringe-bar
                                             ,(pcase val
                                                ('response 'outline-1)
-                                               ('ignore 'outline-2))))))
-            (unless (cl-some (lambda (ov) 
-                              (and (overlay-get ov 'gptel-fringe)
-                                   (= (overlay-start ov) bol)))
-                            (overlays-in bol overlay-end))
-              (let ((ov (make-overlay bol overlay-end)))
+                                               ('ignore 'outline-2)))))
+                 ;; Check if there's already an overlay on this line
+                 (existing-ov (cl-find-if 
+                               (lambda (ov) 
+                                 (and (overlay-get ov 'gptel-fringe)
+                                      (= (overlay-start ov) bol)))
+                               (overlays-in bol (min (+ bol 2) (point-max))))))
+            (if existing-ov
+                ;; Update existing overlay to match property bounds
+                (move-overlay existing-ov bol overlay-end)
+              ;; Create new overlay - NO rear-advance to prevent unwanted growth
+              (let ((ov (make-overlay bol overlay-end nil nil nil)))
                 (overlay-put ov 'gptel-fringe t)
                 (overlay-put ov 'line-prefix fringe-string)
                 (overlay-put ov 'wrap-prefix fringe-string)
@@ -369,6 +379,17 @@ by isolating the specified parameters for each request."
     (gptel--fringe--clear)
     (gptel--fringe--refresh (point-min) (point-max))))
 
+(defun gptel--fringe--stream-update ()
+  "Update fringe indicators during streaming response."
+  (when gptel-fringe-mode
+    ;; Process the visible window area immediately
+    (when-let ((window (get-buffer-window (current-buffer))))
+      (let ((start (window-start window))
+            (end (window-end window t)))
+        (gptel--fringe--refresh start end)
+        ;; Force a redisplay cycle
+        (redisplay t)))))
+
 (define-minor-mode gptel-fringe-mode
   "Show fringe indicators for AI response/reasoning lines."
   :lighter " ⊞"
@@ -376,19 +397,11 @@ by isolating the specified parameters for each request."
       (progn
         (jit-lock-register #'gptel--fringe--refresh)
         (gptel--fringe--refresh (point-min) (point-max))
-        ;; Add hooks to refresh when buffer changes
-        (add-hook 'after-change-functions #'gptel--fringe--after-change nil t))
+        ;; Hook into streaming updates
+        (add-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update nil t))
     (jit-lock-unregister #'gptel--fringe--refresh)
-    (remove-hook 'after-change-functions #'gptel--fringe--after-change t)
+    (remove-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update t)
     (gptel--fringe--clear)))
-
-(defun gptel--fringe--after-change (beg end _len)
-  "Trigger re-fontification after text changes."
-  (when gptel-fringe-mode
-    ;; Expand the region slightly to catch property changes
-    (let ((start (save-excursion (goto-char beg) (line-beginning-position)))
-          (finish (save-excursion (goto-char end) (line-end-position))))
-      (jit-lock-refontify start finish))))
 
 (add-hook 'gptel-mode-hook #'gptel-fringe-mode)
 
