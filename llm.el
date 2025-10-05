@@ -286,17 +286,18 @@ by isolating the specified parameters for each request."
       (let ((val (get-text-property (point) 'gptel)))
         (when (memq val '(response reasoning))
           (let* ((bol (point))
-                 (eol (progn (end-of-line) (point))))
+                 (eol (progn (end-of-line) (point)))
+                 (fringe-string (propertize " " 'display
+                                          `(left-fringe gptel-fringe-bar
+                                            ,(pcase val
+                                               ('response 'font-lock-comment-face)
+                                               ('reasoning 'font-lock-keyword-face))))))
             (unless (cl-some (lambda (ov) (overlay-get ov 'gptel-fringe)) 
                             (overlays-at bol))
               (let ((ov (make-overlay bol (min (1+ eol) (point-max)))))
                 (overlay-put ov 'gptel-fringe t)
-                (overlay-put ov 'line-prefix
-                            (propertize " " 'display
-                                      `(left-fringe gptel-fringe-bar
-                                        ,(pcase val
-                                           ('response 'font-lock-comment-face)
-                                           ('reasoning 'font-lock-keyword-face)))))
+                (overlay-put ov 'line-prefix fringe-string)
+                (overlay-put ov 'wrap-prefix fringe-string)  ; ← Add this line
                 (overlay-put ov 'evaporate t)
                 (push ov gptel--fringe-overlays))))))
       (forward-line 1))))
