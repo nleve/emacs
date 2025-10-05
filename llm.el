@@ -243,27 +243,57 @@ by isolating the specified parameters for each request."
 
 ;;; llm.el ends here
 
+
 ;; ---------------------------------------------------------------------------
 ;;  gptel-fringe – fringe indicators for response/reasoning lines
 ;; ---------------------------------------------------------------------------
 (defvar-local gptel--fringe-overlays nil)
 
+;; Define custom fringe bitmaps that fill the entire line height
+(define-fringe-bitmap 'gptel-fringe-bar
+  (vector #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000
+          #b00110000)
+  nil nil 'center)
+
 (defun gptel--fringe--refresh (beg end)
   "JIT-lock function: mark lines containing gptel response/reasoning."
   (save-excursion
     (goto-char beg)
+    (beginning-of-line)
     (while (< (point) end)
       (let ((val (get-text-property (point) 'gptel)))
         (when (memq val '(response reasoning))
-          (let ((bol (progn (beginning-of-line) (point)))
-                (eol (progn (end-of-line) (point))))
+          (let* ((bol (point))
+                 (eol (progn (end-of-line) (point))))
             (unless (cl-some (lambda (ov) (overlay-get ov 'gptel-fringe)) 
                             (overlays-at bol))
-              (let ((ov (make-overlay bol (min (1+ eol) (point-max)))))  ; Changed here
+              (let ((ov (make-overlay bol (min (1+ eol) (point-max)))))
                 (overlay-put ov 'gptel-fringe t)
-                (overlay-put ov 'before-string
+                (overlay-put ov 'line-prefix
                             (propertize " " 'display
-                                      `(left-fringe vertical-bar
+                                      `(left-fringe gptel-fringe-bar
                                         ,(pcase val
                                            ('response 'font-lock-comment-face)
                                            ('reasoning 'font-lock-keyword-face)))))
