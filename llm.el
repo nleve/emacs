@@ -286,25 +286,37 @@ by isolating the specified parameters for each request."
       (let ((val (get-text-property (point) 'gptel)))
         (when (memq val '(response reasoning))
           (let* ((bol (point))
-                 (eol (progn (end-of-line) (point)))
+                 (eol (line-end-position))
+                 ;; Extend to the beginning of next line to ensure wrapped lines are covered
+                 (overlay-end (min (1+ eol) (point-max)))
                  (fringe-string (propertize " " 'display
                                           `(left-fringe gptel-fringe-bar
                                             ,(pcase val
                                                ('response 'font-lock-comment-face)
                                                ('reasoning 'font-lock-keyword-face))))))
-            (unless (cl-some (lambda (ov) (overlay-get ov 'gptel-fringe)) 
-                            (overlays-at bol))
-              (let ((ov (make-overlay bol (min (1+ eol) (point-max)))))
+            (unless (cl-some (lambda (ov) 
+                              (and (overlay-get ov 'gptel-fringe)
+                                   (= (overlay-start ov) bol)))
+                            (overlays-in bol overlay-end))
+              (let ((ov (make-overlay bol overlay-end)))
                 (overlay-put ov 'gptel-fringe t)
                 (overlay-put ov 'line-prefix fringe-string)
-                (overlay-put ov 'wrap-prefix fringe-string)  ; ← Add this line
+                (overlay-put ov 'wrap-prefix fringe-string)
                 (overlay-put ov 'evaporate t)
                 (push ov gptel--fringe-overlays))))))
-      (forward-line 1))))
+      (forward-line 1)))
+  ;; Return the bounds for JIT-lock
+  `(jit-lock-bounds ,beg . ,end))
 
 (defun gptel--fringe--clear ()
   (mapc #'delete-overlay gptel--fringe-overlays)
   (setq gptel--fringe-overlays nil))
+
+(defun gptel--fringe--force-refresh ()
+  "Force refresh of all fringe indicators."
+  (when gptel-fringe-mode
+    (gptel--fringe--clear)
+    (gptel--fringe--refresh (point-min) (point-max))))
 
 (define-minor-mode gptel-fringe-mode
   "Show fringe indicators for AI response/reasoning lines."
@@ -312,8 +324,19 @@ by isolating the specified parameters for each request."
   (if gptel-fringe-mode
       (progn
         (jit-lock-register #'gptel--fringe--refresh)
-        (gptel--fringe--refresh (point-min) (point-max)))
+        (gptel--fringe--refresh (point-min) (point-max))
+        ;; Add hooks to refresh when buffer changes
+        (add-hook 'after-change-functions #'gptel--fringe--after-change nil t))
     (jit-lock-unregister #'gptel--fringe--refresh)
+    (remove-hook 'after-change-functions #'gptel--fringe--after-change t)
     (gptel--fringe--clear)))
+
+(defun gptel--fringe--after-change (beg end _len)
+  "Trigger re-fontification after text changes."
+  (when gptel-fringe-mode
+    ;; Expand the region slightly to catch property changes
+    (let ((start (save-excursion (goto-char beg) (line-beginning-position)))
+          (finish (save-excursion (goto-char end) (line-end-position))))
+      (jit-lock-refontify start finish))))
 
 (add-hook 'gptel-mode-hook #'gptel-fringe-mode)
