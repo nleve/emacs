@@ -9,7 +9,58 @@
 (use-package gptel
   :ensure
   :defer
+  :bind (:map gptel-mode-map
+         ("C-c C-n" . gptel-next-response)
+         ("C-c C-p" . gptel-previous-response)
+         ("C-c M-n" . gptel-end-of-response)
+         ("C-c M-p" . gptel-beginning-of-response))
   :config
+
+  (defun gptel-next-response (&optional arg)
+    "Move to the beginning of the next gptel response."
+    (interactive "p")
+    (unless arg (setq arg 1))
+    (let ((pos (point)))
+      (when (gptel--in-response-p)
+        (gptel-end-of-response nil nil 1))
+      (if (text-property-search-forward 'gptel 'response t)
+          (progn
+            (gptel-beginning-of-response nil nil 1)
+            (when (> arg 1)
+              (gptel-next-response (1- arg))))
+        (goto-char pos)
+        (message "No more responses"))))
+
+  (defun gptel-previous-response (&optional arg)
+    "Move to the beginning of the previous gptel response."
+    (interactive "p")
+    (unless arg (setq arg 1))
+    (let ((pos (point)))
+      (when (gptel--in-response-p)
+        (gptel-beginning-of-response nil nil 1))
+      (if (text-property-search-backward 'gptel 'response t)
+          (progn
+            (gptel-beginning-of-response nil nil 1)
+            (when (> arg 1)
+              (gptel-previous-response (1- arg))))
+        (goto-char pos)
+        (message "No previous responses"))))
+
+  (defun gptel--imenu-create-index ()
+    "Create an imenu index for gptel responses."
+    (let ((index nil) (count 0))
+      (save-excursion
+        (goto-char (point-min))
+        (while (text-property-search-forward 'gptel 'response t)
+          (let ((beg (prop-match-beginning (text-property-search-match))))
+            (setq count (1+ count))
+            (push (cons (format "Response %d" count) beg) index))))
+      (nreverse index)))
+
+  (add-hook 'gptel-mode-hook
+            (lambda ()
+              (setq-local imenu-create-index-function #'gptel--imenu-create-index)))
+  
   (setq gptel-confirm-tool-calls 't)
 
   (setq n/gptel-tabbyAPI-models
@@ -251,30 +302,30 @@ by isolating the specified parameters for each request."
 
 ;; Define custom fringe bitmaps that fill the entire line height
 (define-fringe-bitmap 'gptel-fringe-bar
-  (vector #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000
-          #b11100000)
+  (vector #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000
+          #b01000000)
   nil nil 'center)
 
 (defun gptel--fringe--refresh (beg end)
@@ -284,28 +335,27 @@ by isolating the specified parameters for each request."
     (beginning-of-line)
     (while (< (point) end)
       (let ((val (get-text-property (point) 'gptel)))
-        (when (memq val '(response reasoning))
+        (when (memq val '(response ignore))
           (let* ((bol (point))
                  (eol (line-end-position))
-                 ;; Extend to the beginning of next line to ensure wrapped lines are covered
-                 (overlay-end (min (1+ eol) (point-max)))
+                 ;; Use eol instead of (1+ eol) to avoid extending into next line
+                 (overlay-end eol)
                  (fringe-string (propertize " " 'display
                                           `(left-fringe gptel-fringe-bar
                                             ,(pcase val
-                                               ('response 'font-lock-comment-face)
-                                               ('reasoning 'font-lock-keyword-face))))))
+                                               ('response 'outline-1)
+                                               ('ignore 'outline-2))))))
             (unless (cl-some (lambda (ov) 
                               (and (overlay-get ov 'gptel-fringe)
                                    (= (overlay-start ov) bol)))
-                            (overlays-in bol overlay-end))
-              (let ((ov (make-overlay bol overlay-end)))
+                            (overlays-in bol (1+ bol)))  ;; Check just at bol
+              (let ((ov (make-overlay bol overlay-end nil t nil)))  ;; rear-advance nil, front-advance nil
                 (overlay-put ov 'gptel-fringe t)
                 (overlay-put ov 'line-prefix fringe-string)
                 (overlay-put ov 'wrap-prefix fringe-string)
                 (overlay-put ov 'evaporate t)
                 (push ov gptel--fringe-overlays))))))
       (forward-line 1)))
-  ;; Return the bounds for JIT-lock
   `(jit-lock-bounds ,beg . ,end))
 
 (defun gptel--fringe--clear ()
@@ -340,3 +390,9 @@ by isolating the specified parameters for each request."
       (jit-lock-refontify start finish))))
 
 (add-hook 'gptel-mode-hook #'gptel-fringe-mode)
+
+(gptel-make-preset 'thepreset
+  :description "default" :backend "openrouter" :model
+  'anthropic/claude-sonnet-4.5 :system 'default :tools 'nil :stream t
+  :temperature nil :max-tokens nil :use-context 'user :track-media nil
+  :include-reasoning 'ignore)
