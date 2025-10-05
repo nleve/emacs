@@ -242,3 +242,47 @@ by isolating the specified parameters for each request."
   )
 
 ;;; llm.el ends here
+
+;; ---------------------------------------------------------------------------
+;;  gptel-fringe – fringe indicators for response/reasoning lines
+;; ---------------------------------------------------------------------------
+(defvar-local gptel--fringe-overlays nil)
+
+(defun gptel--fringe--refresh (beg end)
+  "JIT-lock function: mark lines containing gptel response/reasoning."
+  (save-excursion
+    (goto-char beg)
+    (while (< (point) end)
+      (let ((val (get-text-property (point) 'gptel)))
+        (when (memq val '(response reasoning))
+          (let ((bol (progn (beginning-of-line) (point)))
+                (eol (progn (end-of-line) (point))))
+            (unless (cl-some (lambda (ov) (overlay-get ov 'gptel-fringe)) 
+                            (overlays-at bol))
+              (let ((ov (make-overlay bol (min (1+ eol) (point-max)))))  ; Changed here
+                (overlay-put ov 'gptel-fringe t)
+                (overlay-put ov 'before-string
+                            (propertize " " 'display
+                                      `(left-fringe vertical-bar
+                                        ,(pcase val
+                                           ('response 'font-lock-comment-face)
+                                           ('reasoning 'font-lock-keyword-face)))))
+                (overlay-put ov 'evaporate t)
+                (push ov gptel--fringe-overlays))))))
+      (forward-line 1))))
+
+(defun gptel--fringe--clear ()
+  (mapc #'delete-overlay gptel--fringe-overlays)
+  (setq gptel--fringe-overlays nil))
+
+(define-minor-mode gptel-fringe-mode
+  "Show fringe indicators for AI response/reasoning lines."
+  :lighter " ⊞"
+  (if gptel-fringe-mode
+      (progn
+        (jit-lock-register #'gptel--fringe--refresh)
+        (gptel--fringe--refresh (point-min) (point-max)))
+    (jit-lock-unregister #'gptel--fringe--refresh)
+    (gptel--fringe--clear)))
+
+(add-hook 'gptel-mode-hook #'gptel-fringe-mode)
