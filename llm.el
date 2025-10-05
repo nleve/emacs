@@ -251,30 +251,30 @@ by isolating the specified parameters for each request."
 
 ;; Define custom fringe bitmaps that fill the entire line height
 (define-fringe-bitmap 'gptel-fringe-bar
-  (vector #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000
-          #b00110000)
+  (vector #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000
+          #b11100000)
   nil nil 'center)
 
 (defun gptel--fringe--refresh (beg end)
