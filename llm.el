@@ -338,8 +338,8 @@ by isolating the specified parameters for each request."
         (when (memq val '(response ignore))
           (let* ((bol (point))
                  (eol (line-end-position))
-                 ;; Use eol instead of (1+ eol) to avoid extending into next line
-                 (overlay-end eol)
+                 ;; Extend to the beginning of next line to ensure wrapped lines are covered
+                 (overlay-end (min (1+ eol) (point-max)))
                  (fringe-string (propertize " " 'display
                                           `(left-fringe gptel-fringe-bar
                                             ,(pcase val
@@ -348,14 +348,15 @@ by isolating the specified parameters for each request."
             (unless (cl-some (lambda (ov) 
                               (and (overlay-get ov 'gptel-fringe)
                                    (= (overlay-start ov) bol)))
-                            (overlays-in bol (1+ bol)))  ;; Check just at bol
-              (let ((ov (make-overlay bol overlay-end nil t nil)))  ;; rear-advance nil, front-advance nil
+                            (overlays-in bol overlay-end))
+              (let ((ov (make-overlay bol overlay-end)))
                 (overlay-put ov 'gptel-fringe t)
                 (overlay-put ov 'line-prefix fringe-string)
                 (overlay-put ov 'wrap-prefix fringe-string)
                 (overlay-put ov 'evaporate t)
                 (push ov gptel--fringe-overlays))))))
       (forward-line 1)))
+  ;; Return the bounds for JIT-lock
   `(jit-lock-bounds ,beg . ,end))
 
 (defun gptel--fringe--clear ()
