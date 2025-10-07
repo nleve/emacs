@@ -326,6 +326,10 @@ by isolating the specified parameters for each request."
           #b01100000
           #b01100000
           #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
           #b01100000)
   nil nil 'center)
 
@@ -347,12 +351,12 @@ BEG and END delimit the region to refresh."
       (goto-char beg)
       (beginning-of-line)
       (setq beg (point))
-      
+
       ;; Extend end to include the full last line
       (goto-char end)
       (end-of-line)
       (setq end (min (1+ (point)) (point-max)))
-      
+
       ;; Process region by property changes for efficiency
       (goto-char beg)
       (let ((pos beg))
