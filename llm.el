@@ -374,10 +374,8 @@ BEG and END delimit the region to refresh."
                          (overlay-end (min (1+ eol) (point-max)))
                          ;; Check for existing overlay at BOL
                          (existing-ov (cl-find-if
-                                      (lambda (ov)
-                                        (and (overlay-get ov 'gptel-fringe)
-                                             (= (overlay-start ov) bol)))
-                                      (overlays-in bol (min (+ bol 2) (point-max))))))
+                                       (lambda (ov) (overlay-get ov 'gptel-fringe))
+                                       (overlays-at bol))))
                     (if existing-ov
                         ;; Update existing overlay
                         (progn
