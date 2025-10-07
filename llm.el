@@ -301,36 +301,9 @@ by isolating the specified parameters for each request."
 (defvar-local gptel--fringe-overlays nil
   "List of fringe overlays in current buffer for cleanup.")
 
-;; Define custom fringe bitmaps that fill the entire line height
+;; Define custom fringe bitmap that fills the entire line height
 (define-fringe-bitmap 'gptel-fringe-bar
-  (vector #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000
-          #b01100000)
+  (make-vector 28 #b01100000)
   nil nil 'center)
 
 (defun gptel--fringe--make-prefix (type)
