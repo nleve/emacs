@@ -338,27 +338,19 @@ by isolating the specified parameters for each request."
         (when (memq val '(response ignore))
           (let* ((bol (point))
                  (eol (line-end-position))
-                 ;; Find the actual end of the gptel property on this line
-                 (prop-end (or (next-single-property-change bol 'gptel nil eol) eol))
-                 ;; Include the newline if the property extends to end of line
-                 (overlay-end (if (= prop-end eol)
-                                  (min (1+ eol) (point-max))
-                                prop-end))
+                 (overlay-end (min (1+ eol) (point-max)))
                  (fringe-string (propertize " " 'display
                                           `(left-fringe gptel-fringe-bar
                                             ,(pcase val
                                                ('response 'outline-1)
                                                ('ignore 'outline-2)))))
-                 ;; Check if there's already an overlay on this line
                  (existing-ov (cl-find-if
                                (lambda (ov)
                                  (and (overlay-get ov 'gptel-fringe)
                                       (= (overlay-start ov) bol)))
                                (overlays-in bol (min (+ bol 2) (point-max))))))
             (if existing-ov
-                ;; Update existing overlay to match property bounds
                 (move-overlay existing-ov bol overlay-end)
-              ;; Create new overlay - NO rear-advance to prevent unwanted growth
               (let ((ov (make-overlay bol overlay-end nil nil nil)))
                 (overlay-put ov 'gptel-fringe t)
                 (overlay-put ov 'line-prefix fringe-string)
@@ -366,7 +358,6 @@ by isolating the specified parameters for each request."
                 (overlay-put ov 'evaporate t)
                 (push ov gptel--fringe-overlays))))))
       (forward-line 1)))
-  ;; Return the bounds for JIT-lock
   `(jit-lock-bounds ,beg . ,end))
 
 (defun gptel--fringe--clear ()
