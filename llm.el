@@ -398,8 +398,7 @@ BEG and END delimit the region to refresh."
                   (forward-line 1))))
             (setq pos next-change)))))
   
-  ;; Return proper jit-lock bounds (list, not cons)
-  (list 'jit-lock-bounds beg end)))
+  `(jit-lock-bounds ,beg . ,end)))
 
 (defun gptel--fringe--clear ()
   "Remove all gptel fringe overlays in current buffer."
