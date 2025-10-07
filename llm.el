@@ -298,7 +298,8 @@ by isolating the specified parameters for each request."
 ;; ---------------------------------------------------------------------------
 ;;  gptel-fringe – fringe indicators for response/reasoning lines
 ;; ---------------------------------------------------------------------------
-(defvar-local gptel--fringe-overlays nil)
+(defvar-local gptel--fringe-overlays nil
+  "List of fringe overlays in current buffer for cleanup.")
 
 ;; Define custom fringe bitmaps that fill the entire line height
 (define-fringe-bitmap 'gptel-fringe-bar
@@ -328,70 +329,153 @@ by isolating the specified parameters for each request."
           #b01100000)
   nil nil 'center)
 
+(defun gptel--fringe--make-prefix (type)
+  "Create fringe prefix string for TYPE ('response or 'ignore)."
+  (propertize " " 'display
+              `(left-fringe gptel-fringe-bar
+                           ,(pcase type
+                              ('response 'outline-1)
+                              ('ignore 'outline-2)
+                              (_ 'outline-1)))))
+
 (defun gptel--fringe--refresh (beg end)
-  "JIT-lock function: mark lines containing gptel response/reasoning."
+  "JIT-lock function: mark lines containing gptel response/reasoning.
+BEG and END delimit the region to refresh."
   (save-excursion
-    (goto-char beg)
-    (beginning-of-line)
-    (while (< (point) end)
-      (let ((val (get-text-property (point) 'gptel)))
-        (when (memq val '(response ignore))
-          (let* ((bol (point))
-                 (eol (line-end-position))
-                 (overlay-end (min (1+ eol) (point-max)))
-                 (fringe-string (propertize " " 'display
-                                          `(left-fringe gptel-fringe-bar
-                                            ,(pcase val
-                                               ('response 'outline-1)
-                                               ('ignore 'outline-2)))))
-                 (existing-ov (cl-find-if
-                               (lambda (ov)
-                                 (and (overlay-get ov 'gptel-fringe)
-                                      (= (overlay-start ov) bol)))
-                               (overlays-in bol (min (+ bol 2) (point-max))))))
-            (if existing-ov
-                (move-overlay existing-ov bol overlay-end)
-              (let ((ov (make-overlay bol overlay-end nil nil nil)))
-                (overlay-put ov 'gptel-fringe t)
-                (overlay-put ov 'line-prefix fringe-string)
-                (overlay-put ov 'wrap-prefix fringe-string)
-                (overlay-put ov 'evaporate t)
-                (push ov gptel--fringe-overlays))))))
-      (forward-line 1)))
-  `(jit-lock-bounds ,beg . ,end))
+    (save-restriction
+      (widen)  ; Ensure we see the whole buffer
+      (goto-char beg)
+      (beginning-of-line)
+      (setq beg (point))
+      
+      ;; Extend end to include the full last line
+      (goto-char end)
+      (end-of-line)
+      (setq end (min (1+ (point)) (point-max)))
+      
+      ;; Process region by property changes for efficiency
+      (goto-char beg)
+      (let ((pos beg))
+        (while (< pos end)
+          (let* ((next-change (or (next-single-property-change pos 'gptel nil end) end))
+                 (val (get-text-property pos 'gptel)))
+            (when (memq val '(response ignore))
+              ;; Process each line in this property region
+              (save-excursion
+                (goto-char pos)
+                (while (and (< (point) next-change) (< (point) end))
+                  (let* ((bol (line-beginning-position))
+                         (eol (line-end-position))
+                         ;; Overlay must extend past EOL to catch line-prefix
+                         (overlay-end (min (1+ eol) (point-max)))
+                         ;; Check for existing overlay at BOL
+                         (existing-ov (cl-find-if
+                                      (lambda (ov)
+                                        (and (overlay-get ov 'gptel-fringe)
+                                             (= (overlay-start ov) bol)))
+                                      (overlays-in bol (min (+ bol 2) (point-max))))))
+                    (if existing-ov
+                        ;; Update existing overlay
+                        (progn
+                          (move-overlay existing-ov bol overlay-end)
+                          ;; Update prefix in case type changed
+                          (let ((prefix (gptel--fringe--make-prefix val)))
+                            (overlay-put existing-ov 'line-prefix prefix)
+                            (overlay-put existing-ov 'wrap-prefix prefix)))
+                      ;; Create new overlay
+                      (let ((ov (make-overlay bol overlay-end nil t nil))
+                            (prefix (gptel--fringe--make-prefix val)))
+                        (overlay-put ov 'gptel-fringe t)
+                        (overlay-put ov 'gptel-fringe-type val)
+                        (overlay-put ov 'line-prefix prefix)
+                        (overlay-put ov 'wrap-prefix prefix)
+                        (overlay-put ov 'evaporate t)
+                        (push ov gptel--fringe-overlays))))
+                  (forward-line 1))))
+            (setq pos next-change)))))
+  
+  ;; Return proper jit-lock bounds (list, not cons)
+  (list 'jit-lock-bounds beg end)))
 
 (defun gptel--fringe--clear ()
+  "Remove all gptel fringe overlays in current buffer."
   (mapc #'delete-overlay gptel--fringe-overlays)
-  (setq gptel--fringe-overlays nil))
+  (setq gptel--fringe-overlays nil)
+  ;; Also remove any orphaned overlays
+  (remove-overlays (point-min) (point-max) 'gptel-fringe t))
+
+(defun gptel--fringe--cleanup-removed-properties (beg end)
+  "Remove fringe overlays where gptel property was removed.
+Called after text changes to clean up stale overlays."
+  (dolist (ov (overlays-in beg end))
+    (when (overlay-get ov 'gptel-fringe)
+      (let ((ov-start (overlay-start ov)))
+        ;; Check if overlay still covers text with gptel property
+        (unless (and ov-start
+                     (memq (get-text-property ov-start 'gptel)
+                           '(response ignore)))
+          (delete-overlay ov)
+          (setq gptel--fringe-overlays
+                (delq ov gptel--fringe-overlays)))))))
 
 (defun gptel--fringe--force-refresh ()
   "Force refresh of all fringe indicators."
   (when gptel-fringe-mode
     (gptel--fringe--clear)
-    (gptel--fringe--refresh (point-min) (point-max))))
+    (jit-lock-refontify (point-min) (point-max))))
 
 (defun gptel--fringe--stream-update ()
-  "Update fringe indicators during streaming response."
+  "Update fringe indicators during streaming response.
+Uses jit-lock for efficient incremental updates."
   (when gptel-fringe-mode
-    ;; Process the visible window area immediately
-    (when-let ((window (get-buffer-window (current-buffer))))
-      (let ((start (window-start window))
-            (end (window-end window t)))
-        (gptel--fringe--refresh start end)
-        ;; Force a redisplay cycle
-        (redisplay t)))))
+    ;; Let jit-lock handle the refresh efficiently
+    ;; This will trigger gptel--fringe--refresh for visible regions
+    (jit-lock-refontify)))
+
+(defun gptel--fringe--after-change (beg end _len)
+  "After-change function to clean up stale overlays.
+BEG and END delimit the changed region."
+  (when gptel-fringe-mode
+    ;; Clean up any overlays in changed region that lost their property
+    (gptel--fringe--cleanup-removed-properties beg end)))
+
+(defun gptel--fringe--kill-buffer-cleanup ()
+  "Clean up fringe overlays when buffer is killed."
+  (when gptel-fringe-mode
+    (gptel--fringe--clear)))
 
 (define-minor-mode gptel-fringe-mode
-  "Show fringe indicators for AI response/reasoning lines."
+  "Show fringe indicators for AI response/reasoning lines.
+
+This mode adds visual indicators in the left fringe for lines
+that contain AI responses or internal reasoning. Lines with the
+'response property show in one color, 'ignore in another.
+
+The indicators appear on both the main line and any visual
+continuation lines when text wraps."
   :lighter " ⊞"
   (if gptel-fringe-mode
       (progn
+        ;; Register with jit-lock for efficient fontification
         (jit-lock-register #'gptel--fringe--refresh)
+        
+        ;; Initial refresh of entire buffer
         (gptel--fringe--refresh (point-min) (point-max))
+        
         ;; Hook into streaming updates
-        (add-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update nil t))
+        (add-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update nil t)
+        
+        ;; Clean up stale overlays after changes
+        (add-hook 'after-change-functions #'gptel--fringe--after-change nil t)
+        
+        ;; Clean up on buffer kill
+        (add-hook 'kill-buffer-hook #'gptel--fringe--kill-buffer-cleanup nil t))
+    
+    ;; Cleanup when mode is disabled
     (jit-lock-unregister #'gptel--fringe--refresh)
     (remove-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update t)
+    (remove-hook 'after-change-functions #'gptel--fringe--after-change t)
+    (remove-hook 'kill-buffer-hook #'gptel--fringe--kill-buffer-cleanup t)
     (gptel--fringe--clear)))
 
 (add-hook 'gptel-mode-hook #'gptel-fringe-mode)
