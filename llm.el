@@ -109,7 +109,7 @@
        :capabilities (tool-use reasoning cache)
        :context-window 131072
        )
-      (qwen/qwen3-vl-235b-a22b-thinking
+      (qwen/qwen3-235b-a22b-thinking-2507
        :capabilities (tool-use reasoning cache)
        :context-window 131072
        )
@@ -302,30 +302,30 @@ by isolating the specified parameters for each request."
 
 ;; Define custom fringe bitmaps that fill the entire line height
 (define-fringe-bitmap 'gptel-fringe-bar
-  (vector #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000
-          #b01000000)
+  (vector #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000
+          #b01100000)
   nil nil 'center)
 
 (defun gptel--fringe--refresh (beg end)
@@ -350,8 +350,8 @@ by isolating the specified parameters for each request."
                                                ('response 'outline-1)
                                                ('ignore 'outline-2)))))
                  ;; Check if there's already an overlay on this line
-                 (existing-ov (cl-find-if 
-                               (lambda (ov) 
+                 (existing-ov (cl-find-if
+                               (lambda (ov)
                                  (and (overlay-get ov 'gptel-fringe)
                                       (= (overlay-start ov) bol)))
                                (overlays-in bol (min (+ bol 2) (point-max))))))
@@ -405,8 +405,8 @@ by isolating the specified parameters for each request."
 
 (add-hook 'gptel-mode-hook #'gptel-fringe-mode)
 
-(gptel-make-preset 'thepreset
-  :description "default" :backend "openrouter" :model
-  'anthropic/claude-sonnet-4.5 :system 'default :tools 'nil :stream t
-  :temperature nil :max-tokens nil :use-context 'user :track-media nil
-  :include-reasoning 'ignore)
+;(gptel-make-preset 'thepreset
+;  :description "default" :backend "openrouter" :model
+;  'anthropic/claude-sonnet-4.5 :system 'default :tools 'nil :stream t
+;  :temperature nil :max-tokens nil :use-context 'user :track-media nil
+;  :include-reasoning 'ignore)
