@@ -296,26 +296,26 @@ by isolating the specified parameters for each request."
 
 
 ;; ---------------------------------------------------------------------------
-;;  gptel-fringe – fringe indicators for response/reasoning lines
+;;  gptel-gutter – fringe/margin indicators for response/reasoning lines
 ;; ---------------------------------------------------------------------------
-(defvar-local gptel--fringe-overlays nil
+(defvar-local gptel-gutter--overlays nil
   "List of fringe overlays in current buffer for cleanup.")
 
 ;; Define custom fringe bitmap that fills the entire line height
-(define-fringe-bitmap 'gptel-fringe-bar
+(define-fringe-bitmap 'gptel-gutter-bar
   (make-vector 28 #b01100000)
   nil nil 'center)
 
-(defun gptel--fringe--make-prefix (type)
+(defun gptel-gutter--make-prefix (type)
   "Create fringe prefix string for TYPE ('response or 'ignore)."
   (propertize " " 'display
-              `(left-fringe gptel-fringe-bar
+              `(left-fringe gptel-gutter-bar
                            ,(pcase type
                               ('response 'outline-1)
                               ('ignore 'outline-2)
                               (_ 'outline-1)))))
 
-(defun gptel--fringe--refresh (beg end)
+(defun gptel-gutter--refresh (beg end)
   "JIT-lock function: mark lines containing gptel response/reasoning.
 BEG and END delimit the region to refresh."
   (save-excursion
@@ -347,78 +347,78 @@ BEG and END delimit the region to refresh."
                          (overlay-end (min (1+ eol) (point-max)))
                          ;; Check for existing overlay at BOL
                          (existing-ov (cl-find-if
-                                       (lambda (ov) (overlay-get ov 'gptel-fringe))
+                                       (lambda (ov) (overlay-get ov 'gptel-gutter))
                                        (overlays-at bol))))
                     (if existing-ov
                         ;; Update existing overlay
                         (progn
                           (move-overlay existing-ov bol overlay-end)
                           ;; Update prefix in case type changed
-                          (let ((prefix (gptel--fringe--make-prefix val)))
+                          (let ((prefix (gptel-gutter--make-prefix val)))
                             (overlay-put existing-ov 'line-prefix prefix)
                             (overlay-put existing-ov 'wrap-prefix prefix)))
                       ;; Create new overlay
                       (let ((ov (make-overlay bol overlay-end nil t nil))
-                            (prefix (gptel--fringe--make-prefix val)))
-                        (overlay-put ov 'gptel-fringe t)
-                        (overlay-put ov 'gptel-fringe-type val)
+                            (prefix (gptel-gutter--make-prefix val)))
+                        (overlay-put ov 'gptel-gutter t)
+                        (overlay-put ov 'gptel-gutter-type val)
                         (overlay-put ov 'line-prefix prefix)
                         (overlay-put ov 'wrap-prefix prefix)
                         (overlay-put ov 'evaporate t)
-                        (push ov gptel--fringe-overlays))))
+                        (push ov gptel-gutter--overlays))))
                   (forward-line 1))))
             (setq pos next-change)))))
   
   `(jit-lock-bounds ,beg . ,end)))
 
-(defun gptel--fringe--clear ()
+(defun gptel-gutter--clear ()
   "Remove all gptel fringe overlays in current buffer."
-  (mapc #'delete-overlay gptel--fringe-overlays)
-  (setq gptel--fringe-overlays nil)
+  (mapc #'delete-overlay gptel-gutter--overlays)
+  (setq gptel-gutter--overlays nil)
   ;; Also remove any orphaned overlays
-  (remove-overlays (point-min) (point-max) 'gptel-fringe t))
+  (remove-overlays (point-min) (point-max) 'gptel-gutter t))
 
-(defun gptel--fringe--cleanup-removed-properties (beg end)
+(defun gptel-gutter--cleanup-removed-properties (beg end)
   "Remove fringe overlays where gptel property was removed.
 Called after text changes to clean up stale overlays."
   (dolist (ov (overlays-in beg end))
-    (when (overlay-get ov 'gptel-fringe)
+    (when (overlay-get ov 'gptel-gutter)
       (let ((ov-start (overlay-start ov)))
         ;; Check if overlay still covers text with gptel property
         (unless (and ov-start
                      (memq (get-text-property ov-start 'gptel)
                            '(response ignore)))
           (delete-overlay ov)
-          (setq gptel--fringe-overlays
-                (delq ov gptel--fringe-overlays)))))))
+          (setq gptel-gutter--overlays
+                (delq ov gptel-gutter--overlays)))))))
 
-(defun gptel--fringe--force-refresh ()
+(defun gptel-gutter--force-refresh ()
   "Force refresh of all fringe indicators."
-  (when gptel-fringe-mode
-    (gptel--fringe--clear)
+  (when gptel-gutter-mode
+    (gptel-gutter--clear)
     (jit-lock-refontify (point-min) (point-max))))
 
-(defun gptel--fringe--stream-update ()
+(defun gptel-gutter--stream-update ()
   "Update fringe indicators during streaming response.
 Uses jit-lock for efficient incremental updates."
-  (when gptel-fringe-mode
+  (when gptel-gutter-mode
     ;; Let jit-lock handle the refresh efficiently
-    ;; This will trigger gptel--fringe--refresh for visible regions
+    ;; This will trigger gptel-gutter--refresh for visible regions
     (jit-lock-refontify)))
 
-(defun gptel--fringe--after-change (beg end _len)
+(defun gptel-gutter--after-change (beg end _len)
   "After-change function to clean up stale overlays.
 BEG and END delimit the changed region."
-  (when gptel-fringe-mode
+  (when gptel-gutter-mode
     ;; Clean up any overlays in changed region that lost their property
-    (gptel--fringe--cleanup-removed-properties beg end)))
+    (gptel-gutter--cleanup-removed-properties beg end)))
 
-(defun gptel--fringe--kill-buffer-cleanup ()
+(defun gptel-gutter--kill-buffer-cleanup ()
   "Clean up fringe overlays when buffer is killed."
-  (when gptel-fringe-mode
-    (gptel--fringe--clear)))
+  (when gptel-gutter-mode
+    (gptel-gutter--clear)))
 
-(define-minor-mode gptel-fringe-mode
+(define-minor-mode gptel-gutter-mode
   "Show fringe indicators for AI response/reasoning lines.
 
 This mode adds visual indicators in the left fringe for lines
@@ -428,31 +428,31 @@ that contain AI responses or internal reasoning. Lines with the
 The indicators appear on both the main line and any visual
 continuation lines when text wraps."
   :lighter " ⊞"
-  (if gptel-fringe-mode
+  (if gptel-gutter-mode
       (progn
         ;; Register with jit-lock for efficient fontification
-        (jit-lock-register #'gptel--fringe--refresh)
+        (jit-lock-register #'gptel-gutter--refresh)
         
         ;; Initial refresh of entire buffer
-        (gptel--fringe--refresh (point-min) (point-max))
+        (gptel-gutter--refresh (point-min) (point-max))
         
         ;; Hook into streaming updates
-        (add-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update nil t)
+        (add-hook 'gptel-post-stream-hook #'gptel-gutter--stream-update nil t)
         
         ;; Clean up stale overlays after changes
-        (add-hook 'after-change-functions #'gptel--fringe--after-change nil t)
+        (add-hook 'after-change-functions #'gptel-gutter--after-change nil t)
         
         ;; Clean up on buffer kill
-        (add-hook 'kill-buffer-hook #'gptel--fringe--kill-buffer-cleanup nil t))
+        (add-hook 'kill-buffer-hook #'gptel-gutter--kill-buffer-cleanup nil t))
     
     ;; Cleanup when mode is disabled
-    (jit-lock-unregister #'gptel--fringe--refresh)
-    (remove-hook 'gptel-post-stream-hook #'gptel--fringe--stream-update t)
-    (remove-hook 'after-change-functions #'gptel--fringe--after-change t)
-    (remove-hook 'kill-buffer-hook #'gptel--fringe--kill-buffer-cleanup t)
-    (gptel--fringe--clear)))
+    (jit-lock-unregister #'gptel-gutter--refresh)
+    (remove-hook 'gptel-post-stream-hook #'gptel-gutter--stream-update t)
+    (remove-hook 'after-change-functions #'gptel-gutter--after-change t)
+    (remove-hook 'kill-buffer-hook #'gptel-gutter--kill-buffer-cleanup t)
+    (gptel-gutter--clear)))
 
-(add-hook 'gptel-mode-hook #'gptel-fringe-mode)
+(add-hook 'gptel-mode-hook #'gptel-gutter-mode)
 
 ;(gptel-make-preset 'thepreset
 ;  :description "default" :backend "openrouter" :model
