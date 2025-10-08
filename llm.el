@@ -427,7 +427,7 @@ that contain AI responses or internal reasoning. Lines with the
 
 The indicators appear on both the main line and any visual
 continuation lines when text wraps."
-  :lighter " ⊞"
+  :global nil
   (if gptel-gutter-mode
       (progn
         ;; Register with jit-lock for efficient fontification
