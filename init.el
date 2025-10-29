@@ -49,7 +49,8 @@
   ;(set-frame-font (font-spec :family "Source Code Pro" :size 14) nil t)
   ;(defvar my/fixed-font-spec '(:family "JetBrainsMono Nerd Font" :size 15))
   ;(defvar my/fixed-font-spec '(:family "Hack" :size 15))
-  (setq my/fixed-font-spec '(:family "IosevkaTerm Nerd Font" :size 16))
+  ;(setq my/fixed-font-spec '(:family "IosevkaTerm Nerd Font" :size 16))
+  (setq my/fixed-font-spec '(:family "VictorMono Nerd Font" :size 15 :weight medium))
   (defvar my/variable-font-spec '(:family "Noto Sans" :size 16 :weight light))
   (set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
   (set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
@@ -224,6 +225,7 @@
   (setq diff-hl-show-staged-changes nil)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode 1)
+  (diff-hl-margin-mode 1)
   (diff-hl-flydiff-mode 1)
   (eval-after-load 'diff-hl
     '(progn
@@ -303,7 +305,7 @@
 
 ;; LSP
 (use-package eglot
-  :hook (prog-mode . eglot-ensure)
+  ;:hook (prog-mode . eglot-ensure)
   :init
   (setq eglot-stay-out-of '(flymake))
   :config
@@ -547,11 +549,10 @@ buffer is not part of a recognized project."
   :ensure
   :defer
   :config
-  (setq markdown-fontify-code-blocks-natively t)
   (add-hook 'markdown-mode-hook 'visual-line-mode)
   (add-hook 'markdown-mode-hook 'variable-pitch-mode)
   (add-hook 'markdown-mode-hook 'toggle-word-wrap)
-  (add-hook 'markdown-mode-hook 'markdown-toggle-markup-hiding)
+  (add-hook 'markdown-mode-hook 'markdown-toggle-fontify-code-blocks-natively)
   )
 
 (use-package pdf-tools :ensure :defer)
