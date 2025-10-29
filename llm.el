@@ -16,6 +16,9 @@
          ("C-c M-p" . gptel-beginning-of-response))
   :config
 
+
+  (add-hook 'gptel-mode-hook #'gptel-highlight-mode)
+
   (defun gptel-next-response (&optional arg)
     "Move to the beginning of the next gptel response."
     (interactive "p")
@@ -154,6 +157,8 @@
 	  ))
 
   (setq gptel-temperature nil) ; do not override any temperature settings on the backend!!
+  (setq gptel-include-reasoning 'ignore)
+  (setq gptel-highlight-methods '(fringe))
 
   (defun n/gptel-set-temperature ()
     "Prompt the user for a number and set gptel-temperature to that number.
@@ -293,138 +298,6 @@ by isolating the specified parameters for each request."
   )
 
 ;;; llm.el ends here
-
-
-;; ---------------------------------------------------------------------------
-;;  gptel-gutter – fringe/margin indicators for response/reasoning lines
-;; ---------------------------------------------------------------------------
-
-;; Define custom fringe bitmap that fills the entire line height
-(define-fringe-bitmap 'gptel-gutter-bar
-  (make-vector 28 #b01100000)
-  nil nil 'center)
-
-(defun gptel-gutter--make-prefix (type)
-  "Create fringe prefix string for TYPE ('response or 'ignore)."
-  (propertize " " 'display
-              `(left-fringe gptel-gutter-bar
-                           ,(pcase type
-                              ('response 'outline-1)
-                              ('ignore 'outline-2)
-                              (_ 'outline-1)))))
-
-(defun gptel-gutter--update-line-overlay (bol eol val)
-  "Create or update overlay for line from BOL to EOL with prefix for VAL."
-  (let* ((overlay-end (min (1+ eol) (point-max)))
-         (existing-ov (cl-find-if
-                       (lambda (ov) (overlay-get ov 'gptel-gutter))
-                       (overlays-at bol)))
-         (prefix (gptel-gutter--make-prefix val)))
-    (if existing-ov
-        (progn
-          (move-overlay existing-ov bol overlay-end)
-          (overlay-put existing-ov 'line-prefix prefix)
-          (overlay-put existing-ov 'wrap-prefix prefix)
-          (overlay-put existing-ov 'gptel-gutter-type val))
-      (let ((ov (make-overlay bol overlay-end nil t nil)))
-        (overlay-put ov 'gptel-gutter t)
-        (overlay-put ov 'gptel-gutter-type val)
-        (overlay-put ov 'line-prefix prefix)
-        (overlay-put ov 'wrap-prefix prefix)
-        (overlay-put ov 'evaporate t)))))
-
-(defun gptel-gutter--refresh (beg end)
-  "JIT-lock function: mark lines containing gptel response/reasoning.
-BEG and END delimit the region to refresh."
-  (save-excursion
-    (save-restriction
-      (widen)  ; Ensure we see the whole buffer
-      (goto-char beg)
-      (beginning-of-line)
-      (setq beg (point))
-
-      ;; Extend end to include the full last line
-      (goto-char end)
-      (end-of-line)
-      (setq end (min (1+ (point)) (point-max)))
-
-      ;; Step 1: Clean up stale overlays in the region
-      (dolist (ov (overlays-in beg end))
-        (when (overlay-get ov 'gptel-gutter)
-          (let* ((ov-start (overlay-start ov))
-                 (ov-end (overlay-end ov)))
-            (unless (and ov-start
-                         (or (text-property-any ov-start ov-end 'gptel 'response)
-                             (text-property-any ov-start ov-end 'gptel 'ignore)))
-              (delete-overlay ov)))))
-
-      ;; Step 2: Add/update overlays where properties exist
-      (goto-char beg)
-      (let ((pos beg))
-        (while (< pos end)
-          (let* ((next-change (or (next-single-property-change pos 'gptel nil end) end))
-                 (val (get-text-property pos 'gptel)))
-            (when (memq val '(response ignore))
-              ;; Process each line in this property region
-              (save-excursion
-                (goto-char pos)
-                (while (and (< (point) next-change) (< (point) end))
-                  (let ((bol (line-beginning-position))
-                        (eol (line-end-position)))
-                    (gptel-gutter--update-line-overlay bol eol val))
-                  (forward-line 1))))
-            (setq pos next-change))))))
-  
-  `(jit-lock-bounds ,beg . ,end))
-
-(defun gptel-gutter--clear ()
-  "Remove all gptel fringe overlays in current buffer."
-  (remove-overlays (point-min) (point-max) 'gptel-gutter t))
-
-(defun gptel-gutter--stream-update ()
-  "Update fringe indicators during streaming response.
-Uses jit-lock for efficient incremental updates."
-  (when gptel-gutter-mode
-    ;; Let jit-lock handle the refresh efficiently
-    ;; TODO: If possible, replace with (jit-lock-refontify start end) using gptel bounds for better perf
-    (jit-lock-refontify)))
-
-(defun gptel-gutter--kill-buffer-cleanup ()
-  "Clean up fringe overlays when buffer is killed."
-  (when gptel-gutter-mode
-    (gptel-gutter--clear)))
-
-(define-minor-mode gptel-gutter-mode
-  "Show fringe indicators for gptel response/reasoning lines.
-
-This mode adds visual indicators in the left fringe for lines
-that contain gptel responses or internal reasoning. Lines with the
-'response property show in one color, 'ignore in another.
-
-The indicators appear on both the main line and any visual
-continuation lines when text wraps."
-  :global nil
-  (if gptel-gutter-mode
-      (progn
-        ;; Register with jit-lock for efficient fontification
-        (jit-lock-register #'gptel-gutter--refresh)
-        
-        ;; Initial refresh of entire buffer
-        (gptel-gutter--refresh (point-min) (point-max))
-        
-        ;; Hook into streaming updates
-        (add-hook 'gptel-post-stream-hook #'gptel-gutter--stream-update nil t)
-        
-        ;; Clean up on buffer kill
-        (add-hook 'kill-buffer-hook #'gptel-gutter--kill-buffer-cleanup nil t))
-    
-    ;; Cleanup when mode is disabled
-    (jit-lock-unregister #'gptel-gutter--refresh)
-    (remove-hook 'gptel-post-stream-hook #'gptel-gutter--stream-update t)
-    (remove-hook 'kill-buffer-hook #'gptel-gutter--kill-buffer-cleanup t)
-    (gptel-gutter--clear)))
-
-(add-hook 'gptel-mode-hook #'gptel-gutter-mode)
 
 ;(gptel-make-preset 'thepreset
 ;  :description "default" :backend "openrouter" :model
