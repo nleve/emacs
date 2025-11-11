@@ -4,7 +4,7 @@
 ; This is my init.el.  There are many like it, but this one is mine.
 ;
 ;;; Code:
-(toggle-scroll-bar 1)
+(toggle-scroll-bar 0)
 (defun n/disable-scroll-bar (window)
   "Disable scroll bar for WINDOW."
   (set-window-scroll-bars window nil nil nil nil 1))
@@ -49,29 +49,37 @@
   ;(set-frame-font (font-spec :family "Source Code Pro" :size 14) nil t)
   ;(defvar my/fixed-font-spec '(:family "JetBrainsMono Nerd Font" :size 15))
   ;(defvar my/fixed-font-spec '(:family "Hack" :size 15))
-  ;(setq my/fixed-font-spec '(:family "IosevkaTerm Nerd Font" :size 16))
-  (setq my/fixed-font-spec '(:family "VictorMono Nerd Font" :size 15 :weight medium))
-  (defvar my/variable-font-spec '(:family "Noto Sans" :size 16 :weight light))
-  (set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
-  (set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
-  (set-face-attribute 'variable-pitch nil :font (apply #'font-spec my/variable-font-spec))
+  ;(setq my/fixed-font-spec '(:family "Iosevka Nerd Font" :size 17 :weight light))
+  ;(setq my/fixed-font-spec '(:family "VictorMono Nerd Font" :size 16 :weight medium))
+  (setq my/fixed-font-spec '(:family "Lilex Nerd Font" :size 16 :weight normal))
+  (setq my/variable-font-spec '(:family "Spectral" :size 17 :weight normal))
+  (defun my/reapply-fonts (&rest _)
+    (set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
+    (set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
+    (set-face-attribute 'variable-pitch nil :font (apply #'font-spec my/variable-font-spec))
+    ;; Remap italic slant to oblique for all faces to use non-cursive slanted variant
+    (dolist (face (face-list))
+      (when (eq (face-attribute face :slant) 'italic)
+        (set-face-attribute face nil :slant 'oblique))))
 
-  (custom-theme-set-faces
-   'user
-   `(variable-pitch ((t ,my/variable-font-spec)))
-   `(org-default ((t ,my/variable-font-spec)))
-   `(fixed-pitch ((t ,my/fixed-font-spec)))
-   `(default ((t ,my/fixed-font-spec)))
-   )
+  (add-hook 'enable-theme-functions #'my/reapply-fonts)
 
-  (dolist (face '(default fixed-pitch))
-    (set-face-attribute `,face nil :font (apply #'font-spec my/fixed-font-spec)))
+  ;; (custom-theme-set-faces
+  ;;  'user
+  ;;  `(variable-pitch ((t ,my/variable-font-spec)))
+  ;;  `(org-default ((t ,my/variable-font-spec)))
+  ;;  `(fixed-pitch ((t ,my/fixed-font-spec)))
+  ;;  `(default ((t ,my/fixed-font-spec)))
+  ;;  )
+
+  ;(dolist (face '(default fixed-pitch))
+  ;  (set-face-attribute `,face nil :font (apply #'font-spec my/fixed-font-spec)))
 
   ;; Turn on some things I like.
   (add-hook 'prog-mode-hook 'display-line-numbers-mode)
   (add-hook 'prog-mode-hook 'hl-line-mode)
   ;; tell me what's wrong
-  (add-hook 'prog-mode-hook #'flymake-mode)
+  ;(add-hook 'prog-mode-hook #'flymake-mode)
 
   ;; Setup window management rules
   ;(setq display-buffer-alist '((".*" display-buffer-same-window)))
@@ -140,6 +148,7 @@
   ;(load-theme 'gruber-darker)
   ;(load-theme 'doom-dark+)
   ;(load-theme 'modus-vivendi-tinted)
+  ;(load-theme 'doom-monokai-machine)
   )
 
 ;; Fast smooth-scrolling
@@ -216,7 +225,11 @@
   )
 
 ;; Git
-(use-package magit :defer)
+(use-package magit)
+
+(use-package magit-delta
+  :hook (magit-mode . magit-delta-mode)
+  )
 
 (use-package diff-hl
   :ensure
@@ -265,6 +278,7 @@
 )
 
 (use-package elixir-ts-mode
+  :defer
   :ensure)
 
 (use-package treesit-auto
@@ -303,12 +317,21 @@
   (delete 'markdown treesit-auto-langs)
   (global-treesit-auto-mode))
 
+(use-package dumb-jump
+  :init
+  (add-hook 'xref-backend-functions #'dumb-jump-xref-activate)
+  (setq xref-show-definitions-function #'xref-show-definitions-completing-read)
+  )
+
 ;; LSP
 (use-package eglot
   ;:hook (prog-mode . eglot-ensure)
   :init
   (setq eglot-stay-out-of '(flymake))
+  :hook ((eglot-managed-mode . my/eglot-mode-hook-fn))
   :config
+  (defun my/eglot-mode-hook-fn ()
+    (eglot-inlay-hints-mode 0))
   :bind (:map
 	 eglot-mode-map
 	 ("C-c c a" . eglot-code-actions)
@@ -317,7 +340,7 @@
 	 ("C-c c f" . eglot-format))
   )
 
-(use-package nerd-icons :defer t)
+(use-package nerd-icons)
 (use-package nerd-icons-dired
   :commands (nerd-icons-dired-mode))
 
@@ -330,35 +353,67 @@
   )
 
 (use-package eldoc-box
-  :defer
   :config
 
-  (setq eldoc-box-clear-with-C-g 't)
-  ;; Function to darken a color slightly
-  (defun my-darken-color (color)
-    "Return a slightly darker version of COLOR (a hex string like \"#RRGGBB\")."
-    (let* ((rgb (color-name-to-rgb color)) ; Convert to (R G B) list, 0.0-1.0
-           (r (max 0 (- (nth 0 rgb) 0.08))) ; Reduce each by 0.08, clamp at 0
-           (g (max 0 (- (nth 1 rgb) 0.08)))
-           (b (max 0 (- (nth 2 rgb) 0.08))))
+  (defun my-adjust-color (color amount)
+    "Adjust COLOR lighter or darker by AMOUNT.
+If AMOUNT is positive, lighten the color. If negative, darken it.
+COLOR should be a hex string like \"#RRGGBB\".
+AMOUNT is a float between -1.0 and 1.0."
+    (let* ((rgb (color-name-to-rgb color))
+           (r (+ (nth 0 rgb) amount))
+           (g (+ (nth 1 rgb) amount))
+           (b (+ (nth 2 rgb) amount)))
+      ;; Clamp values between 0 and 1
+      (setq r (max 0 (min 1 r)))
+      (setq g (max 0 (min 1 g)))
+      (setq b (max 0 (min 1 b)))
       (format "#%02x%02x%02x"
-              (floor (* r 255))  ; Convert back to 0-255 range
+              (floor (* r 255))
               (floor (* g 255))
               (floor (* b 255)))))
 
-  (defun my-darken-eldoc-box ()
+  (defun my-theme-is-light-p ()
+    "Return t if the current theme appears to be light-themed."
+    (let* ((bg (face-background 'default nil t))
+           (rgb (color-name-to-rgb bg))
+           ;; Calculate perceived brightness (0.0 to 1.0)
+           (brightness (/ (+ (* 0.299 (nth 0 rgb))
+                             (* 0.587 (nth 1 rgb))
+                             (* 0.114 (nth 2 rgb)))
+                          1.0)))
+      ;; If brightness > 0.5, it's a light theme
+      (> brightness 0.5)))
+
+  (defun my-adjust-eldoc-box (&rest _)
+    "Make eldoc-box darker for light themes, lighter for dark themes."
     (interactive)
-    (let ((darker-bg (my-darken-color (face-background 'default nil t))))
-      (set-face-attribute 'eldoc-box-border nil :background darker-bg)
-      (set-face-attribute 'eldoc-box-body nil :background darker-bg)
-      )
-    )
-  
+    (let* ((is-light (my-theme-is-light-p))
+           (adjustment (if is-light -0.08 0.08)) ; Darken light, lighten dark
+           (adjusted-bg (my-adjust-color (face-background 'default nil t) adjustment)))
+      (set-face-attribute 'eldoc-box-border nil :background adjusted-bg)
+      (set-face-attribute 'eldoc-box-body nil :background adjusted-bg)))
+
   ;; Hook into theme changes
-  (add-hook 'enable-theme-functions #'my-darken-eldoc-box)
-  
+  (add-hook 'enable-theme-functions #'my-adjust-eldoc-box)
+
   ;; Run once to apply current state
-  (my-darken-eldoc-box)
+  (my-adjust-eldoc-box)
+
+  ;; make eldoc / eglot links clickable
+  (defun my-markdown-follow-help-or-link-at-point-advice (orig-fun &rest args)
+    "Prefer to use the help-echo property as `browse-url' target."
+    (let* ((event-win (posn-window (event-start last-input-event)))
+           (help-echo (with-selected-frame (window-frame event-win)
+                        (with-current-buffer (window-buffer event-win)
+                          (get-text-property (point) 'help-echo))))
+           (help-is-url (url-type (url-generic-parse-url help-echo))))
+      (message "if %s (browse-url %S)" help-is-url help-echo)
+      (if help-is-url
+          (browse-url help-echo)
+        (apply orig-fun args))))
+
+  (advice-add 'markdown-follow-thing-at-point :around #'my-markdown-follow-help-or-link-at-point-advice)
   )
 
 (load "~/.config/emacs/llm.el")
@@ -402,7 +457,8 @@
    ;; Buffers
    "b"   '(:ignore t :wk "buffers")
    "bw"  '(kill-buffer-and-window :wk "kill buffer / window")
-   "bx"  '(kill-buffer :wk "kill buffer")
+   "bx"  '(kill-current-buffer :wk "kill current buffer")
+   "bX"  '(kill-buffer :wk "kill buffer")
    "bs"  '(ido-switch-buffer :wk "switch buffer")
    "bb"  '(bury-buffer :wk "bury buffer")
    "bi"  '(ibuffer :wk "ibuffer")
@@ -553,6 +609,10 @@ buffer is not part of a recognized project."
   (add-hook 'markdown-mode-hook 'variable-pitch-mode)
   (add-hook 'markdown-mode-hook 'toggle-word-wrap)
   (add-hook 'markdown-mode-hook 'markdown-toggle-fontify-code-blocks-natively)
+
+  (set-face-attribute 'markdown-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-inline-code-face nil :inherit 'fixed-pitch)
+  (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)  ; For preformatted text
   )
 
 (use-package pdf-tools :ensure :defer)
@@ -619,6 +679,8 @@ buffer is not part of a recognized project."
 	 :map minibuffer-local-map
 	 ("C-c C-c" . embark-collect)
 	 ("C-c C-e" . embark-export))
+  :config
+  (setq embark-mixed-indicator-delay 0.1)
   )
 
 ;; embark integration with consult
@@ -700,6 +762,18 @@ buffer is not part of a recognized project."
          :map vertico-map
          ("C-x C-d" . consult-dir)
          ("C-x C-j" . consult-dir-jump-file)))
+
+; make ediff easier to use
+(use-package casual
+  :init
+  (casual-ediff-install) ; run this to enable Casual Ediff
+  (add-hook 'ediff-keymap-setup-hook
+            (lambda ()
+              (keymap-set ediff-mode-map "C-o" #'casual-ediff-tmenu)))
+  (setq ediff-keep-variants nil)
+  (setq ediff-window-setup-function 'ediff-setup-windows-plain)
+  (setq ediff-split-window-function 'split-window-horizontally)
+  )
 
 ;; Do this for yanked regions too.
 (require 'pulse)

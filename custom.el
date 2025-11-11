@@ -5,7 +5,8 @@
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
  '(custom-safe-themes
-   '("0325a6b5eea7e5febae709dab35ec8648908af12cf2d2b569bedc8da0a3a81c1"
+   '("72d9086e9e67a3e0e0e6ba26a1068b8b196e58a13ccaeff4bfe5ee6288175432"
+     "0325a6b5eea7e5febae709dab35ec8648908af12cf2d2b569bedc8da0a3a81c1"
      "01f347a923dd21661412d4c5a7c7655bf17fb311b57ddbdbd6fce87bd7e58de6"
      "bbb13492a15c3258f29c21d251da1e62f1abb8bbd492386a673dcfab474186af"
      "7fd8b914e340283c189980cd1883dbdef67080ad1a3a9cc3df864ca53bdc89cf"
@@ -18,22 +19,26 @@
      default))
  '(js-indent-level 2)
  '(package-selected-packages
-   '(ace-window all-the-icons-dired centered-window company consult-dir
-                consult-eglot consult-project-extra diff-hl diminish
-                dired-sidebar doom-modeline doom-themes dtrt-indent
-                eldoc-box embark-consult evil-collection evil-goggles
-                exec-path-from-shell gcmh general gptel magit
-                marginalia markdown-mode nerd-icons-dired orderless
-                org-bullets pdf-tools pet popper prog-mode request
-                spacemacs-theme tabspaces tree-sitter-langs
-                treesit-auto ultra-scroll vertico vertico-posframe
-                vscode-icon vterm zig-mode))
+   '(ace-window all-the-icons-dired casual centered-window company
+                consult-dir consult-eglot consult-project-extra
+                diff-hl diminish dired-sidebar doom-modeline
+                doom-themes doric-themes dtrt-indent dumb-jump
+                ef-themes eldoc-box embark-consult evil-collection
+                evil-goggles exec-path-from-shell gcmh general gptel
+                gruber-darker-theme magit magit-delta marginalia
+                markdown-mode monokai-pro-theme nerd-icons-dired
+                orderless org-bullets pdf-tools pet popper prog-mode
+                ragmacs request spacemacs-theme tabspaces
+                tree-sitter-langs treesit-auto ultra-scroll vertico
+                vertico-posframe vscode-icon vterm zig-mode))
  '(package-vc-selected-packages
-   '((ultra-scroll :url "https://github.com/jdtsmith/ultra-scroll")))
+   '((ragmacs :url "https://github.com/positron-solutions/ragmacs")
+     (ultra-scroll :url "https://github.com/jdtsmith/ultra-scroll")))
  '(spacious-padding-widths
    '(:internal-border-width 10 :header-line-width 4 :mode-line-width 3
                             :tab-width 4 :right-divider-width 0
-                            :scroll-bar-width 8 :fringe-width 0)))
+                            :scroll-bar-width 8 :fringe-width 0))
+ '(treesit-font-lock-level 2))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
