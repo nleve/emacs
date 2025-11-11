@@ -8,7 +8,6 @@
 
 (use-package gptel
   :ensure
-  :defer
   :bind (:map gptel-mode-map
          ("C-c C-n" . gptel-next-response)
          ("C-c C-p" . gptel-previous-response)
@@ -102,9 +101,14 @@
       (anthropic/claude-sonnet-4.5
        :capabilities (tool-use media cache)
        :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :request-params '(:thinking (:type "enabled" :budget_tokens 2048))
        :context-window 1000000
        )
       (moonshotai/kimi-k2-0905
+       :capabilities (tool-use reasoning)
+       :context-window 256000
+       )
+      (moonshotai/kimi-k2-thinking
        :capabilities (tool-use reasoning)
        :context-window 256000
        )
@@ -121,7 +125,21 @@
        :context-window 256000
        :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
        )
+      (z-ai/glm-4.6
+       :capabilities (tool-use cache reasoning)
+       :context-window 200000
+       )
+      (openai/gpt-5
+       :capabilities (tool-use cache reasoning media)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 400000
+      )
+      (openai/gpt-5-codex
+       :capabilities (tool-use cache reasoning media)
+       :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp" "application/pdf")
+       :context-window 400000
       ))
+    )
 
   (setq n/gptel-openrouter
     (gptel-make-openai "openrouter"
@@ -172,7 +190,7 @@ If the user inputs 'nil' or presses Enter without input, set gptel-temperature t
 	      (setq gptel-temperature temp)
 	    (message "Invalid input. Please enter a number or 'nil'."))))))
   
-  (setopt gptel-model 'moonshotai/kimi-k2-0905
+  (setopt gptel-model 'anthropic/claude-sonnet-4.5
 	  gptel-backend n/gptel-openrouter)
 
   ;; Get rid of the default backend, it clutters up the model selection
@@ -296,6 +314,49 @@ by isolating the specified parameters for each request."
   (setf (alist-get 'markdown-mode gptel-prompt-prefix-alist) "")
   (setf (alist-get 'text-mode gptel-prompt-prefix-alist) "")
   )
+
+(use-package ragmacs
+   :ensure
+   :vc (:url "https://github.com/positron-solutions/ragmacs"
+	    :rev :newest)
+   :after gptel
+   :defer
+   :init
+   (gptel-make-preset 'introspect
+     :pre (lambda () (require 'ragmacs))
+     :system
+     "You are pair programming with the user in Emacs and on Emacs.
+ 
+ Your job is to dive into Elisp code and understand the APIs and
+ structure of elisp libraries and Emacs.  Use the provided tools to do
+ so, but do not make duplicate tool calls for information already
+ available in the chat.
+ 
+ <tone>
+ 1. Be terse and to the point.  Speak directly.
+ 2. Explain your reasoning.
+ 3. Do NOT hedge or qualify.
+ 4. If you don't know, say you don't know.
+ 5. Do not offer unprompted advice or clarifications.
+ 6. Never apologize.
+ 7. Do NOT summarize your answers.
+ </tone>
+ 
+ <code_generation>
+ When generating code:
+ 1. Always check that functions or variables you use in your code exist.
+ 2. Also check their calling convention and function-arity before you use them.
+ 3. Write code that can be tested by evaluation, and offer to evaluate
+ code using the `elisp_eval` tool.
+ </code_generation>
+ 
+ <formatting>
+ 1. When referring to code symbols (variables, functions, tags etc) enclose them in markdown quotes.
+    Examples: `read_file`, `getResponse(url, callback)`
+    Example: `<details>...</details>`
+ 2. If you use LaTeX notation, enclose math in \( and \), or \[ and \] delimiters.
+ </formatting>"
+     :tools '("introspection")))
 
 ;;; llm.el ends here
 
