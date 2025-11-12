@@ -5,6 +5,7 @@
 ;
 ;;; Code:
 (toggle-scroll-bar 0)
+(setq inhibit-startup-screen t)
 (defun n/disable-scroll-bar (window)
   "Disable scroll bar for WINDOW."
   (set-window-scroll-bars window nil nil nil nil 1))
@@ -518,7 +519,7 @@ AMOUNT is a float between -1.0 and 1.0."
    "/"    '(:ignore t :wk "consult")
    "//"   '(consult-line :wk "line")
    "/r"   '(consult-ripgrep :wk "ripgrep")
-   "/f"   '(consult-fd :wk "file")
+   "/p"   '(consult-fd :wk "file (project)")
    "/h"   '((lambda () (interactive)(consult-fd "~/")) :wk "file (from home)")
    "/o"   '(consult-outline :wk "outline")
    "/b"   '(consult-buffer :wk "buffer")
@@ -527,6 +528,8 @@ AMOUNT is a float between -1.0 and 1.0."
    "/e"   '(consult-flymake :wk "consult-flymake")
    "/m"   '(consult-line-multi :wk "consult-line-multi")
    "/i"   '(consult-imenu :wk "consult-imenu")
+   "/f"   '((lambda () (interactive) (consult-fd (file-name-directory (or (buffer-file-name) default-directory))))
+            :wk "file (current dir)")
    "p"   '(consult-project-extra-find :wk "project find")
    "P"   '(consult-project-extra-find-other-window :wk "project find ow")
    ;; gptel
