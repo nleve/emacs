@@ -349,10 +349,10 @@
   (global-diff-hl-mode 1)
   (diff-hl-margin-mode 1)
   (diff-hl-flydiff-mode 1)
-  (eval-after-load 'diff-hl
-    '(progn
-       (advice-add 'diff-hl-next-hunk :after (lambda (&rest _args) (recenter 5)))
-       ))
+  ;(eval-after-load 'diff-hl
+  ;  '(progn
+  ;     (advice-add 'diff-hl-next-hunk :after (lambda (&rest _args) (recenter 5)))
+  ;     ))
   )
 
 ;; Completion
