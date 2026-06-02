@@ -4,7 +4,7 @@
 ; This is my init.el.  There are many like it, but this one is mine.
 ;
 ;;; Code:
-(toggle-scroll-bar 1)
+(toggle-scroll-bar 0)
 (setq inhibit-startup-screen t)
 (defun n/disable-scroll-bar (window)
   "Disable scroll bar for WINDOW."
