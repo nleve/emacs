@@ -4,7 +4,7 @@
 ; Make it minimal-looking.
 (menu-bar-mode -1)
 (tool-bar-mode -1)
-(tab-bar-mode 1)
+(tab-bar-mode -1)
 
 ;; vsync fix
 ;(add-to-list 'default-frame-alist '(inhibit-double-buffering . t))
