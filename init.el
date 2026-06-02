@@ -737,6 +737,8 @@ buffer is not part of a recognized project."
   (set-face-attribute 'markdown-pre-face nil :inherit 'fixed-pitch)  ; For preformatted text
   )
 
+(add-to-list 'auto-mode-alist '("\\.html?\\'" . mhtml-ts-mode))
+
 (use-package pdf-tools :ensure :defer)
 
 (use-package doom-modeline
