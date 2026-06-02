@@ -4,7 +4,7 @@
 ; This is my init.el.  There are many like it, but this one is mine.
 ;
 ;;; Code:
-(toggle-scroll-bar 0)
+(toggle-scroll-bar 1)
 (setq inhibit-startup-screen t)
 (defun n/disable-scroll-bar (window)
   "Disable scroll bar for WINDOW."
@@ -52,8 +52,8 @@
   ;(defvar my/fixed-font-spec '(:family "Hack" :size 15))
   ;(setq my/fixed-font-spec '(:family "Iosevka Nerd Font" :size 17 :weight light))
   ;(setq my/fixed-font-spec '(:family "VictorMono Nerd Font" :size 16 :weight medium))
-  (setq my/fixed-font-spec '(:family "Lilex Nerd Font" :size 16 :weight normal))
-  (setq my/variable-font-spec '(:family "Spectral" :size 17 :weight normal))
+  (setq my/fixed-font-spec '(:family "Lilex Nerd Font" :size 15 :weight normal))
+  (setq my/variable-font-spec '(:family "Spectral" :size 16 :weight normal))
   (defun my/reapply-fonts (&rest _)
     (set-face-attribute 'default nil :font (apply #'font-spec my/fixed-font-spec))
     (set-face-attribute 'fixed-pitch nil :font (apply #'font-spec my/fixed-font-spec))
@@ -126,8 +126,126 @@
   (setq auto-save-default nil) ; stop creating #autosave# files
   (setq create-lockfiles nil)  ; Temporary to make react dev server not puke...?
 
-  ;; Fix console mouse behavior
-  (unless (display-graphic-p) (xterm-mouse-mode))
+  ;; Fast smooth-scrolling
+  ;(use-package ultra-scroll
+  ;  :vc (:url "https://github.com/jdtsmith/ultra-scroll"
+  ;	    :rev :newest)
+  ;  :init
+  ;  (setq scroll-conservatively 101 ; important!
+  ;        scroll-margin 0)
+  ;  :config
+  ;  (if (display-graphic-p) (ultra-scroll-mode 1))
+  ;  )
+
+  (setq scroll-conservatively 101) ; makes scroll go 1 line at a time when cursor hits screen edge
+
+  ;; Terminal mouse handling for emacsclient -nw frames.
+  (defvar my/terminal-wheel-min-move-lines 1
+    "Minimum cursor lines to move per terminal mouse wheel event.")
+
+  (defvar my/terminal-wheel-max-move-lines 4
+    "Maximum cursor lines to move per accelerated terminal mouse wheel event.")
+
+  (defvar my/terminal-wheel-fast-interval 0.015
+    "Maximum seconds between terminal wheel events for maximum cursor movement.")
+
+  (defvar my/terminal-wheel-fast-events-required 5
+    "Consecutive fast terminal wheel events required before acceleration.")
+
+  (defvar my/terminal-wheel--last-direction nil)
+  (defvar my/terminal-wheel--last-time nil)
+  (defvar my/terminal-wheel--fast-count 1)
+
+  (defun my/terminal-wheel--direction (event)
+    "Return the scroll direction for terminal wheel EVENT."
+    (pcase (event-basic-type event)
+      ((or 'mouse-4 'wheel-up) 'up)
+      ((or 'mouse-5 'wheel-down) 'down)))
+
+  (defun my/terminal-wheel--move-lines (direction)
+    "Return accelerated cursor movement lines for wheel DIRECTION."
+    (let* ((now (float-time))
+           (interval
+            (and my/terminal-wheel--last-time
+                 (eq direction my/terminal-wheel--last-direction)
+                 (- now my/terminal-wheel--last-time)))
+           (fast-event (and interval
+                            (<= interval my/terminal-wheel-fast-interval)))
+           (lines
+            (progn
+              (setq my/terminal-wheel--fast-count
+                    (if fast-event
+                        (1+ my/terminal-wheel--fast-count)
+                      1))
+              (if (>= my/terminal-wheel--fast-count
+                      my/terminal-wheel-fast-events-required)
+                  my/terminal-wheel-max-move-lines
+                my/terminal-wheel-min-move-lines))))
+      (setq my/terminal-wheel--last-direction direction
+            my/terminal-wheel--last-time now)
+      lines))
+
+  (defun my/xterm-mouse-tracking-sequence-no-motion (suffix)
+    "Return XTerm mouse tracking sequences without all-motion mode."
+    (let ((codes (if (eq suffix ?h)
+                     `(1000 ,@(when xterm-mouse-utf-8 '(1005)) 1006)
+                   `(1000 1003 ,@(when xterm-mouse-utf-8 '(1005)) 1006))))
+      (mapcar (lambda (code) (format "\e[?%d%c" code suffix)) codes)))
+
+  (defun my/terminal-wheel-move-point (event)
+    "Move point for terminal wheel events."
+    (interactive (list last-input-event))
+    (let ((direction (my/terminal-wheel--direction event))
+          (window (posn-window (event-start event))))
+      (when (windowp window)
+        (select-window window))
+      (condition-case nil
+          (when direction
+            (let ((lines (my/terminal-wheel--move-lines direction)))
+              (pcase direction
+                ('up (previous-line lines))
+                ('down (next-line lines)))))
+        ((beginning-of-buffer end-of-buffer) nil))))
+
+  (defun my/bind-terminal-wheel-to-point ()
+    "Bind wheel events to point movement."
+    (global-set-key [mouse-4] #'my/terminal-wheel-move-point)
+    (global-set-key [mouse-5] #'my/terminal-wheel-move-point)
+    (global-set-key [wheel-up] #'my/terminal-wheel-move-point)
+    (global-set-key [wheel-down] #'my/terminal-wheel-move-point))
+
+  (defun my/setup-terminal-mouse (&optional frame)
+    "Enable terminal mouse support for FRAME."
+    (let* ((frame (or frame (selected-frame)))
+           (terminal (frame-terminal frame)))
+      (when (and (frame-live-p frame)
+                 (not (display-graphic-p frame))
+                 (terminal-live-p terminal))
+        (with-selected-frame frame
+          (require 'xt-mouse)
+          (require 'mwheel)
+          (my/bind-terminal-wheel-to-point)
+          (unless (advice-member-p #'my/xterm-mouse-tracking-sequence-no-motion
+                                   'xterm-mouse--tracking-sequence)
+            (advice-add 'xterm-mouse--tracking-sequence
+                        :override #'my/xterm-mouse-tracking-sequence-no-motion))
+          (setq mouse-wheel-progressive-speed nil
+                mouse-wheel-scroll-amount
+                `(,my/terminal-wheel-min-move-lines
+                  ((meta))
+                  ((control meta) . global-text-scale)
+                  ((control) . text-scale))
+                xterm-extra-capabilities '(getSelection setSelection))
+          (when (terminal-parameter terminal 'xterm-mouse-mode)
+            (turn-off-xterm-mouse-tracking-on-terminal terminal))
+          (xterm-mouse-mode 1)
+          (turn-on-xterm-mouse-tracking-on-terminal terminal)))))
+
+  (with-eval-after-load 'mwheel
+    (my/bind-terminal-wheel-to-point))
+  (add-hook 'after-make-frame-functions #'my/setup-terminal-mouse)
+  (my/setup-terminal-mouse)
+
 
   (put 'dired-find-alterate-file 'disabled nil)
   (setq dired-kill-when-opening-new-dired-buffer t)
@@ -150,17 +268,6 @@
   ;(load-theme 'doom-dark+)
   ;(load-theme 'modus-vivendi-tinted)
   ;(load-theme 'doom-monokai-machine)
-  )
-
-;; Fast smooth-scrolling
-(use-package ultra-scroll
-  :vc (:url "https://github.com/jdtsmith/ultra-scroll"
-	    :rev :newest)
-  :init
-  (setq scroll-conservatively 101 ; important!
-        scroll-margin 0)
-  :config
-  (if (display-graphic-p) (ultra-scroll-mode 1))
   )
 
 (use-package all-the-icons :defer) ;; run all-the-icons-install-fonts on first run
@@ -286,36 +393,7 @@
   :custom
   (treesit-auto-install 'prompt)
   :config
-  (setq my/fixed-treesit-recipe-list
-  `(,(make-treesit-auto-recipe
-      :lang 'c
-      :ts-mode 'c-ts-mode
-      :remap 'c-mode
-      :revision "v0.23.3"
-      :url "https://github.com/tree-sitter/tree-sitter-c"
-      :ext "\\.c\\'")
-    ,(make-treesit-auto-recipe
-      :lang 'lua
-      :ts-mode 'lua-ts-mode
-      :remap 'lua-mode
-      :revision "v0.3.0"
-      :url "https://github.com/tree-sitter-grammars/tree-sitter-lua"
-      :ext "\\.lua\\'")
-    ,(make-treesit-auto-recipe
-      :lang 'rust
-      :ts-mode 'rust-ts-mode
-      :remap 'rust-mode
-      :revision "v0.23.3"
-      :url "https://github.com/tree-sitter/tree-sitter-rust"
-      :ext "\\.rs\\'")))
-
-  (setq treesit-auto-recipe-list (append my/fixed-treesit-recipe-list treesit-auto-recipe-list))
   (treesit-auto-add-to-auto-mode-alist 'all)
-  (delete 'janet treesit-auto-langs)
-  (delete 'bibtex treesit-auto-langs)
-  (delete 'latex treesit-auto-langs)
-  (delete 'magik treesit-auto-langs)
-  (delete 'markdown treesit-auto-langs)
   (global-treesit-auto-mode))
 
 (use-package dumb-jump
@@ -328,7 +406,8 @@
 (use-package eglot
   ;:hook (prog-mode . eglot-ensure)
   :init
-  (setq eglot-stay-out-of '(flymake))
+  (setq eglot-documentation-renderer nil
+        eglot-stay-out-of '(flymake))
   :hook ((eglot-managed-mode . my/eglot-mode-hook-fn))
   :config
   (defun my/eglot-mode-hook-fn ()
@@ -355,48 +434,64 @@
 
 (use-package eldoc-box
   :config
+  (require 'color)
+
+  (defun my/color-rgb (color)
+    "Return RGB components for COLOR, or nil if COLOR is not usable."
+    (when (and (stringp color)
+               (not (string-prefix-p "unspecified" color)))
+      (ignore-errors
+        (color-name-to-rgb color))))
+
+  (defun my/default-background-color ()
+    "Return a usable default background color, or nil."
+    (catch 'background
+      (dolist (color (list (face-background 'default nil t)
+                           (face-attribute 'default :background nil t)
+                           (frame-parameter nil 'background-color)))
+        (when (my/color-rgb color)
+          (throw 'background color)))))
 
   (defun my-adjust-color (color amount)
     "Adjust COLOR lighter or darker by AMOUNT.
 If AMOUNT is positive, lighten the color. If negative, darken it.
 COLOR should be a hex string like \"#RRGGBB\".
 AMOUNT is a float between -1.0 and 1.0."
-    (let* ((rgb (color-name-to-rgb color))
-           (r (+ (nth 0 rgb) amount))
-           (g (+ (nth 1 rgb) amount))
-           (b (+ (nth 2 rgb) amount)))
-      ;; Clamp values between 0 and 1
-      (setq r (max 0 (min 1 r)))
-      (setq g (max 0 (min 1 g)))
-      (setq b (max 0 (min 1 b)))
-      (format "#%02x%02x%02x"
-              (floor (* r 255))
-              (floor (* g 255))
-              (floor (* b 255)))))
+    (when-let* ((rgb (my/color-rgb color)))
+      (let ((r (+ (nth 0 rgb) amount))
+            (g (+ (nth 1 rgb) amount))
+            (b (+ (nth 2 rgb) amount)))
+        ;; Clamp values between 0 and 1
+        (setq r (max 0 (min 1 r)))
+        (setq g (max 0 (min 1 g)))
+        (setq b (max 0 (min 1 b)))
+        (format "#%02x%02x%02x"
+                (floor (* r 255))
+                (floor (* g 255))
+                (floor (* b 255))))))
 
-  (defun my-theme-is-light-p ()
+  (defun my-theme-is-light-p (&optional color)
     "Return t if the current theme appears to be light-themed."
-    (let* ((bg (face-background 'default nil t))
-           (rgb (color-name-to-rgb bg))
-           ;; Calculate perceived brightness (0.0 to 1.0)
-           (brightness (/ (+ (* 0.299 (nth 0 rgb))
-                             (* 0.587 (nth 1 rgb))
-                             (* 0.114 (nth 2 rgb)))
-                          1.0)))
-      ;; If brightness > 0.5, it's a light theme
-      (> brightness 0.5)))
+    (when-let* ((rgb (my/color-rgb (or color (my/default-background-color)))))
+      (let ((brightness (+ (* 0.299 (nth 0 rgb))
+                           (* 0.587 (nth 1 rgb))
+                           (* 0.114 (nth 2 rgb)))))
+        (> brightness 0.5))))
 
   (defun my-adjust-eldoc-box (&rest _)
     "Make eldoc-box darker for light themes, lighter for dark themes."
     (interactive)
-    (let* ((is-light (my-theme-is-light-p))
-           (adjustment (if is-light -0.08 0.08)) ; Darken light, lighten dark
-           (adjusted-bg (my-adjust-color (face-background 'default nil t) adjustment)))
-      (set-face-attribute 'eldoc-box-border nil :background adjusted-bg)
-      (set-face-attribute 'eldoc-box-body nil :background adjusted-bg)))
+    (when-let* ((bg (my/default-background-color)))
+      (let* ((is-light (my-theme-is-light-p bg))
+             (adjustment (if is-light -0.08 0.08))
+             (adjusted-bg (my-adjust-color bg adjustment)))
+        (when adjusted-bg
+          (set-face-attribute 'eldoc-box-border nil :background adjusted-bg)
+          (set-face-attribute 'eldoc-box-body nil :background adjusted-bg)))))
 
   ;; Hook into theme changes
   (add-hook 'enable-theme-functions #'my-adjust-eldoc-box)
+  (add-hook 'after-make-frame-functions #'my-adjust-eldoc-box)
 
   ;; Run once to apply current state
   (my-adjust-eldoc-box)
@@ -419,6 +514,14 @@ AMOUNT is a float between -1.0 and 1.0."
 
 (load "~/.config/emacs/llm.el")
 (load "~/.config/emacs/org.el")
+(load "~/.config/emacs/tmux.el")
+
+(defun my/ghostel-terminal-input-p ()
+  "Return non-nil when the current Ghostel buffer should receive raw input."
+  (and (derived-mode-p 'ghostel-mode)
+       (boundp 'ghostel--input-mode)
+       (memq ghostel--input-mode '(semi-char char))
+       (fboundp 'ghostel-send-string)))
 
 ;; General keymap
 (use-package general
@@ -438,6 +541,7 @@ AMOUNT is a float between -1.0 and 1.0."
   (general-define-key
    :states '(normal visual motion emacs)
    :keymaps 'override
+   :predicate '(not (my/ghostel-terminal-input-p))
    "C-n" 'scroll-up-line
    "C-p" 'scroll-down-line
    )
@@ -729,7 +833,7 @@ buffer is not part of a recognized project."
 ;; Filter Buffers for Consult-Buffer
 (with-eval-after-load 'consult
   ;; hide full buffer list (still available with "b" prefix)
-  (consult-customize consult--source-buffer :hidden t :default nil)
+  (consult-customize consult-source-buffer :hidden t :default nil)
   ;; set consult-workspace buffer list
   (defvar consult--source-workspace
     (list :name     "Workspace Buffers"
@@ -843,6 +947,23 @@ buffer is not part of a recognized project."
       (set-window-buffer (next-window) next-win-buffer)
       (select-window first-win)
       (if this-win-2nd (other-window 1))))))
+
+(use-package olivetti)
+
+(use-package ghostel
+  :ensure t
+  :config
+  (with-eval-after-load 'evil
+    (evil-set-initial-state 'ghostel-mode 'emacs))
+  (defun my/ghostel-evil-emacs-state ()
+    "Keep Ghostel buffers out of Evil normal state by default."
+    (when (fboundp 'evil-emacs-state)
+      (evil-emacs-state)))
+  (add-hook 'ghostel-mode-hook #'my/ghostel-evil-emacs-state)
+  (dolist (key '("M-h" "M-j" "M-k" "M-l"
+                 "M-H" "M-J" "M-K" "M-L"))
+    (add-to-list 'ghostel-keymap-exceptions key t))
+  (ghostel--rebuild-semi-char-keymap))
 
 ;; set gc-cons-threshold to something more reasonable now that packages are loaded
 (setq gc-cons-threshold 80000000)

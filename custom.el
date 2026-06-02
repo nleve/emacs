@@ -19,20 +19,19 @@
      default))
  '(js-indent-level 2)
  '(package-selected-packages
-   '(ace-window all-the-icons-dired casual centered-window company
-                consult-dir consult-eglot consult-project-extra
-                diff-hl diminish dired-sidebar doom-modeline
-                doom-themes doric-themes dtrt-indent dumb-jump
-                ef-themes eldoc-box embark-consult evil-collection
-                evil-goggles exec-path-from-shell gcmh general gptel
-                gruber-darker-theme magit magit-delta marginalia
-                markdown-mode monokai-pro-theme nerd-icons-dired
-                orderless org-bullets pdf-tools pet popper prog-mode
-                ragmacs request spacemacs-theme tabspaces
-                tree-sitter-langs treesit-auto ultra-scroll vertico
-                vertico-posframe vscode-icon vterm zig-mode))
+   '(ace-window all-the-icons-dired casual centered-window clipetty
+                company consult-dir consult-eglot
+                consult-project-extra diff-hl diminish dired-sidebar
+                doom-modeline doom-themes dtrt-indent dumb-jump
+                eldoc-box embark-consult evil-collection evil-goggles
+                exec-path-from-shell gcmh general ghostel magit-delta
+                marginalia markdown-mode nerd-icons-dired olivetti
+                org-bullets pdf-tools pet popper ragmacs request
+                tabspaces treesit-auto ultra-scroll vertico vterm
+                zig-mode))
  '(package-vc-selected-packages
-   '((ragmacs :url "https://github.com/positron-solutions/ragmacs")
+   '((restore-point :url "https://github.com/arthurcgusmao/restore-point")
+     (ragmacs :url "https://github.com/positron-solutions/ragmacs")
      (ultra-scroll :url "https://github.com/jdtsmith/ultra-scroll")))
  '(spacious-padding-widths
    '(:internal-border-width 10 :header-line-width 4 :mode-line-width 3
