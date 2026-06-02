@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (require 'windmove)
 (defvar my/tmux--tty->pane (make-hash-table :test 'equal))
 (defun my/tmux--default-socket ()

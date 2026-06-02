@@ -87,8 +87,13 @@
 
   ; fix silly defaults
   (setopt sentence-end-double-space nil)
-  ;; Auto refresh buffers
-  (global-auto-revert-mode 1)
+   ;; Undo/redo window layout changes
+   (winner-mode 1)
+   (define-key winner-mode-map (kbd "C-c h") #'winner-undo)
+   (define-key winner-mode-map (kbd "C-c l") #'winner-redo)
+
+   ;; Auto refresh buffers
+   (global-auto-revert-mode nil)
 
   ;; Also auto refresh dired, but be quiet about it
   (setq global-auto-revert-non-file-buffers t)
@@ -138,12 +143,13 @@
   ;  )
 
   (setq scroll-conservatively 101) ; makes scroll go 1 line at a time when cursor hits screen edge
+  (setq scroll-margin 5)
 
   ;; Terminal mouse handling for emacsclient -nw frames.
   (defvar my/terminal-wheel-min-move-lines 1
     "Minimum cursor lines to move per terminal mouse wheel event.")
 
-  (defvar my/terminal-wheel-max-move-lines 4
+  (defvar my/terminal-wheel-max-move-lines 2
     "Maximum cursor lines to move per accelerated terminal mouse wheel event.")
 
   (defvar my/terminal-wheel-fast-interval 0.015
@@ -235,7 +241,7 @@
                   ((meta))
                   ((control meta) . global-text-scale)
                   ((control) . text-scale))
-                xterm-extra-capabilities '(getSelection setSelection))
+                xterm-extra-capabilities '(getSelection setSelection modifyOtherKeys))
           (when (terminal-parameter terminal 'xterm-mouse-mode)
             (turn-off-xterm-mouse-tracking-on-terminal terminal))
           (xterm-mouse-mode 1)
@@ -249,6 +255,11 @@
 
   (put 'dired-find-alterate-file 'disabled nil)
   (setq dired-kill-when-opening-new-dired-buffer t)
+
+  ;; Hide dotfiles in dired by default, toggle with g.
+  (require 'dired-x)
+  (setq dired-omit-files (concat dired-omit-files "\\|^\\..+$"))
+  (add-hook 'dired-mode-hook #'dired-omit-mode)
 
   (recentf-mode 1)
   )
@@ -328,7 +339,10 @@
             (lambda (mode keymaps)
               (when (eq mode 'eglot)
                 (evil-collection-define-key 'normal 'eglot-mode-map
-                  "K" nil))))
+                  "K" nil))
+              (when (eq mode 'dired)
+                (evil-collection-define-key 'normal 'dired-mode-map
+                  "g." #'dired-omit-mode))))
   (evil-collection-init)
   )
 
