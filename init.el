@@ -362,7 +362,7 @@
   :init
   (global-company-mode)
   :bind (
-	 ("C-<return>" . company-manual-begin))
+	 ("M-<return>" . company-manual-begin))
   :custom
   (company-idle-delay 1)
   (company-tooltip-align-annotations 't)
