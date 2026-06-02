@@ -333,10 +333,11 @@
   )
 
 ;; Git
-(use-package magit)
-
-(use-package magit-delta
-  :hook (magit-mode . magit-delta-mode)
+(use-package magit
+  :vc (:url "https://github.com/magit/magit"
+	    :rev :newest)
+  :config
+  (setq magit-diff-fontify-hunk 'all)
   )
 
 (use-package diff-hl
