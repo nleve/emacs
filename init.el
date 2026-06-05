@@ -445,6 +445,8 @@
   :config
   (setq dired-sidebar-theme 'nerd-icons)
   (setq dired-sidebar-use-term-integration t)
+  (setq dired-sidebar-delay-auto-revert-updates nil)
+  (setq dired-sidebar-refresh-on-special-commands nil)
   )
 
 (use-package eldoc-box
@@ -997,6 +999,13 @@ buffer is not part of a recognized project."
                  "M-H" "M-J" "M-K" "M-L"))
     (add-to-list 'ghostel-keymap-exceptions key t))
   (ghostel--rebuild-semi-char-keymap))
+
+(use-package kitty-graphics
+  :vc (:url "https://github.com/cashmeredev/kitty-graphics.el"
+            :rev :newest)
+  :config
+  (unless (display-graphic-p) (kitty-graphics-mode))
+  )
 
 ;; set gc-cons-threshold to something more reasonable now that packages are loaded
 (setq gc-cons-threshold 80000000)
