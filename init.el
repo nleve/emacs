@@ -548,7 +548,9 @@ AMOUNT is a float between -1.0 and 1.0."
 
 (load "~/.config/emacs/llm.el")
 (load "~/.config/emacs/org.el")
-(load "~/.config/emacs/tmux.el")
+(load "~/.config/emacs/diff.el")
+(unless (display-graphic-p) 
+  (load "~/.config/emacs/tmux.el"))
 
 (defun my/ghostel-terminal-input-p ()
   "Return non-nil when the current Ghostel buffer should receive raw input."
