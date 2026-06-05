@@ -828,12 +828,21 @@ buffer is not part of a recognized project."
 	 ("M-p" . popper-toggle-type))
   :init
 
-  (setq popper-reference-buffers
-	'("\\*eldoc" help-mode)
-	)
-  (popper-mode)
-  (popper-echo-mode)
-  )
+(use-package pet
+  :config
+  (defun my/pet-mode-lazily ()
+    "Enable `pet-mode' after the current file has opened."
+    (when buffer-file-name
+      (let ((buf (current-buffer)))
+        (run-with-idle-timer
+         0.2 nil
+         (lambda (buffer)
+           (when (buffer-live-p buffer)
+             (with-current-buffer buffer
+               (when (derived-mode-p 'python-base-mode 'python-mode)
+                 (pet-mode 1)))))
+         buf))))
+  (add-hook 'python-base-mode-hook #'my/pet-mode-lazily))
 
 (use-package centered-window :ensure :defer)
 
