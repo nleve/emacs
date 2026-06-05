@@ -631,7 +631,7 @@ AMOUNT is a float between -1.0 and 1.0."
    "gb"  '(magit-blame :wk "blame")
    "gn"  '(diff-hl-next-hunk :wk "next hunk")
    "gp"  '(diff-hl-previous-hunk :wk "previous hunk")
-   "gs"  '(diff-hl-stage-dwim :wk "stage hunk")
+   "gs"  '(diff-hl-stage-current-hunk :wk "stage hunk")
    "gr"  '(diff-hl-revert-hunk :wk "revert hunk")
    "gh"  '(diff-hl-show-hunk :wk "show hunk")
    ;; Avy
@@ -812,7 +812,7 @@ buffer is not part of a recognized project."
   (setq consult-async-refresh-delay 0.1)
   (setq consult-async-min-input 2)
   (setq xref-show-xrefs-function 'consult-xref)
-  (setq xref-show-definitions-function 'consult-xref)
+  (setq xref-show-definitions-function 'consult-xref))
 
 ;; consult integration with project.el
 (use-package consult-project-extra
