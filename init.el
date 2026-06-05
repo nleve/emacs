@@ -786,7 +786,14 @@ buffer is not part of a recognized project."
 ;; enhanced versions of built-in functionality such as search
 (use-package consult
   :ensure
-  :bind (("C-'" . consult-project-extra-find)))
+  :bind (("C-'" . consult-project-extra-find))
+  :config
+  (setq consult-async-input-debounce 0.05)
+  (setq consult-async-input-throttle 0.2)
+  (setq consult-async-refresh-delay 0.1)
+  (setq consult-async-min-input 2)
+  (setq xref-show-xrefs-function 'consult-xref)
+  (setq xref-show-definitions-function 'consult-xref)
 
 ;; consult integration with project.el
 (use-package consult-project-extra
