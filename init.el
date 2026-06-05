@@ -1035,6 +1035,46 @@ buffer is not part of a recognized project."
 (unless (server-running-p)
   (server-start))
 
+(defun n/magit-ediff-stage (file)
+  (interactive
+   (let ((files (magit-tracked-files)))
+     (list (magit-completing-read "Selectively stage file" files nil t nil nil
+                                  (car (member (magit-current-file) files))))))
+  (require 'magit-ediff)
+  (magit-with-toplevel
+    (let* ((bufB  (magit-find-file-noselect "{worktree}" file t))
+           ;; Use the same encoding for all three buffers or we
+           ;; may end up changing the file in an unintended way.
+           (coding-system-for-read
+            (buffer-local-value 'buffer-file-coding-system bufB))
+           (bufA  (magit-find-file-noselect "{index}" file t 'ediff))
+           (lockA (buffer-local-value 'buffer-read-only bufA))
+           (modeA (buffer-local-value 'magit-blob-mode bufA)))
+      (with-current-buffer bufA
+        ;; Make writable and don't shadow self-insert-command.
+        (magit-blob-mode -1))
+      (magit-ediff-buffers
+       bufA
+       bufB
+       nil
+       nil
+       (lambda ()
+         (when (buffer-live-p ediff-buffer-A)
+           (when lockA
+             (with-current-buffer bufA
+               (if modeA
+                   (magit-blob-mode 1)
+                 (setq-local buffer-read-only t)
+                 (setq-local read-only-mode--state t))))
+           (when (buffer-modified-p ediff-buffer-A)
+             (with-current-buffer ediff-buffer-A
+               (cl-letf* ((orig-y-or-n-p (symbol-function 'y-or-n-p))
+                          ((symbol-function 'y-or-n-p)
+                           (lambda (prompt) (if (string-prefix-p "Update index with contents of " prompt)
+                                                t
+                                              (funcall orig-y-or-n-p prompt)))))
+                 (magit-update-index))))))))))
+
 ;(desktop-save-mode 1)
 
 (provide 'init)
