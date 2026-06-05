@@ -360,6 +360,7 @@
   (setq diff-hl-disable-on-remote 't)
   (setq diff-hl-show-staged-changes nil)
   (setq diff-hl-highlight-reference-function nil)
+  (setq diff-hl-update-async 'thread)
   (setq diff-font-lock-syntax 't)
   (defun my/diff-hl-hide-reference-indicators (&rest _)
     "Hide staged/reference indicators so diff-hl shows only unstaged changes."
