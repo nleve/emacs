@@ -359,14 +359,30 @@
   :config
   (setq diff-hl-disable-on-remote 't)
   (setq diff-hl-show-staged-changes nil)
+  (setq diff-hl-highlight-reference-function nil)
+  (setq diff-font-lock-syntax 't)
+  (defun my/diff-hl-hide-reference-indicators (&rest _)
+    "Hide staged/reference indicators so diff-hl shows only unstaged changes."
+    (setq-local diff-hl-highlight-reference-function nil))
+  (add-hook 'diff-hl-mode-on-hook #'my/diff-hl-hide-reference-indicators)
+  (advice-add 'diff-hl-margin-local-mode :after
+              #'my/diff-hl-hide-reference-indicators)
   (add-hook 'magit-post-refresh-hook 'diff-hl-magit-post-refresh)
   (global-diff-hl-mode 1)
   (diff-hl-margin-mode 1)
   (diff-hl-flydiff-mode 1)
-  ;(eval-after-load 'diff-hl
-  ;  '(progn
-  ;     (advice-add 'diff-hl-next-hunk :after (lambda (&rest _args) (recenter 5)))
-  ;     ))
+  (eval-after-load 'diff-hl
+    '(progn
+       ;; Auto-refresh magit sidebar after staging/reverting hunks
+       (advice-add 'diff-hl-stage-dwim :after
+                   (lambda (&rest _) (magit-after-save-refresh-status)))
+       (advice-add 'diff-hl-revert-hunk :after
+                   (lambda (&rest _) (magit-after-save-refresh-status)))
+       (advice-add 'diff-hl-next-hunk :after (lambda (&rest _args) (recenter 10)))
+       (advice-add 'diff-hl-show-hunk-next :after (lambda (&rest _args) (recenter 10)))
+       (advice-add 'diff-hl-show-hunk-previous :after (lambda (&rest _args) (recenter 10)))
+       (advice-add 'diff-hl-show-hunk :after (lambda (&rest _args) (recenter 10)))
+       ))
   )
 
 ;; Completion
