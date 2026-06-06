@@ -843,12 +843,6 @@ buffer is not part of a recognized project."
   :config
   (add-hook 'python-base-mode-hook 'pet-mode -10))
 
-(use-package popper :ensure
-  :bind (("s-[" . popper-toggle)
-	 ("s-]"   . popper-cycle)
-	 ("M-p" . popper-toggle-type))
-  :init
-
 (use-package pet
   :config
   (defun my/pet-mode-lazily ()
@@ -1026,7 +1020,7 @@ buffer is not part of a recognized project."
   (unless (display-graphic-p) (kitty-graphics-mode))
   )
 
-;; set gc-cons-threshold to something more reasonable now that packages are loaded
+; set gc-cons-threshold to something more reasonable now that packages are loaded
 (setq gc-cons-threshold 80000000)
 
 ;; Start emacs server
