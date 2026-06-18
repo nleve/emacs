@@ -325,7 +325,7 @@
   (define-key evil-normal-state-map (kbd "k") 'evil-previous-visual-line)
   (define-key evil-normal-state-map (kbd "g ]") 'xref-go-forward)
   (define-key evil-normal-state-map (kbd "g [") 'xref-go-back)
-  (define-key evil-normal-state-map (kbd "K") (lambda () (interactive) (if (display-graphic-p) (call-interactively #'eldoc-box-help-at-point) (call-interactively #'eldoc-print-current-symbol-info))))
+  (define-key evil-normal-state-map (kbd "K") 'eldoc-box-help-at-point)
   (define-key evil-normal-state-map [mouse-2] nil)
   (define-key evil-insert-state-map [mouse-2] nil)
   (define-key evil-visual-state-map [mouse-2] nil)
@@ -472,8 +472,14 @@
   )
 
 (use-package eldoc-box
+  :init
+  (advice-add 'eldoc-box--display-graphic-p :override 
+              (lambda () (or (display-graphic-p) (featurep 'tty-child-frames))))
   :config
   (require 'color)
+
+  (setf (alist-get 'internal-border-width eldoc-box-frame-parameters) 3
+        (alist-get 'child-frame-border-width eldoc-box-frame-parameters) 3)
 
   (defun my/color-rgb (color)
     "Return RGB components for COLOR, or nil if COLOR is not usable."
@@ -518,15 +524,16 @@ AMOUNT is a float between -1.0 and 1.0."
         (> brightness 0.5))))
 
   (defun my-adjust-eldoc-box (&rest _)
-    "Make eldoc-box darker for light themes, lighter for dark themes."
+    "Make eldoc-box stand out from the current theme background."
     (interactive)
     (when-let* ((bg (my/default-background-color)))
       (let* ((is-light (my-theme-is-light-p bg))
-             (adjustment (if is-light -0.08 0.08))
-             (adjusted-bg (my-adjust-color bg adjustment)))
-        (when adjusted-bg
-          (set-face-attribute 'eldoc-box-border nil :background adjusted-bg)
-          (set-face-attribute 'eldoc-box-body nil :background adjusted-bg)))))
+             (body-bg (my-adjust-color bg (if is-light -0.08 0.08)))
+             (border-bg (my-adjust-color bg (if is-light -0.24 0.24))))
+        (when body-bg
+          (set-face-attribute 'eldoc-box-body nil :background body-bg))
+        (when border-bg
+          (set-face-attribute 'eldoc-box-border nil :background border-bg)))))
 
   ;; Hook into theme changes
   (add-hook 'enable-theme-functions #'my-adjust-eldoc-box)
