@@ -300,6 +300,11 @@
 
 ;; Evil
 (use-package evil
+  :init
+  (setq evil-normal-state-cursor t
+        evil-motion-state-cursor t
+        evil-visual-state-cursor t
+        evil-emacs-state-cursor t)
   :custom
   (evil-undo-system 'undo-redo)
   (evil-emacs-state-modes nil)
