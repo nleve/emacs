@@ -479,21 +479,55 @@
   (require 'color)
 
   (setf (alist-get 'internal-border-width eldoc-box-frame-parameters) 1
-        (alist-get 'child-frame-border-width eldoc-box-frame-parameters) 1)
+        (alist-get 'child-frame-border-width eldoc-box-frame-parameters) 1
+        (alist-get 'undecorated eldoc-box-frame-parameters) t)
 
   (defun my/color-rgb (color)
     "Return RGB components for COLOR, or nil if COLOR is not usable."
     (when (and (stringp color)
                (not (string-prefix-p "unspecified" color)))
-      (ignore-errors
-        (color-name-to-rgb color))))
+      (or (when (string-match-p "\\`#[[:xdigit:]]\\{6\\}\\'" color)
+            (list (/ (string-to-number (substring color 1 3) 16) 255.0)
+                  (/ (string-to-number (substring color 3 5) 16) 255.0)
+                  (/ (string-to-number (substring color 5 7) 16) 255.0)))
+          (when (string-match-p "\\`#[[:xdigit:]]\\{3\\}\\'" color)
+            (let ((r (substring color 1 2))
+                  (g (substring color 2 3))
+                  (b (substring color 3 4)))
+              (list (/ (string-to-number (concat r r) 16) 255.0)
+                    (/ (string-to-number (concat g g) 16) 255.0)
+                    (/ (string-to-number (concat b b) 16) 255.0))))
+          (ignore-errors
+            (color-name-to-rgb color)))))
 
-  (defun my/default-background-color ()
+  (defun my/usable-color (color)
+    "Return COLOR when it can be used for RGB math."
+    (when (my/color-rgb color)
+      color))
+
+  (defun my/doom-theme-active-p ()
+    "Return non-nil when a Doom theme is currently enabled."
+    (catch 'found
+      (dolist (theme custom-enabled-themes)
+        (when (string-prefix-p "doom-" (symbol-name theme))
+          (throw 'found t)))))
+
+  (defun my/theme-background-color (&optional frame)
+    "Return a palette background color when the frame background is unspecified."
+    (or (and (my/doom-theme-active-p)
+             (fboundp 'doom-color)
+             (my/usable-color (doom-color 'bg)))
+        (pcase (frame-parameter frame 'background-mode)
+          ('light "#ffffff")
+          (_ "#000000"))))
+
+  (defun my/default-background-color (&optional frame)
     "Return a usable default background color, or nil."
     (catch 'background
-      (dolist (color (list (face-background 'default nil t)
-                           (face-attribute 'default :background nil t)
-                           (frame-parameter nil 'background-color)))
+      (dolist (color (list (face-background 'default frame t)
+                           (face-attribute 'default :background frame t)
+                           (frame-parameter frame 'background-color)
+                           (my/theme-background-color frame)))
         (when (my/color-rgb color)
           (throw 'background color)))))
 
@@ -523,17 +557,28 @@ AMOUNT is a float between -1.0 and 1.0."
                            (* 0.114 (nth 2 rgb)))))
         (> brightness 0.5))))
 
-  (defun my-adjust-eldoc-box (&rest _)
+  (defun my-adjust-eldoc-box (&rest args)
     "Make eldoc-box stand out from the current theme background."
     (interactive)
-    (when-let* ((bg (my/default-background-color)))
-      (let* ((is-light (my-theme-is-light-p bg))
-             (body-bg (my-adjust-color bg (if is-light -0.08 0.08)))
-             (border-bg (my-adjust-color bg (if is-light -0.24 0.24))))
-        (when body-bg
-          (set-face-attribute 'eldoc-box-body nil :background body-bg))
-        (when border-bg
-          (set-face-attribute 'eldoc-box-border nil :background border-bg)))))
+    (let ((frame (and (framep (car args)) (car args))))
+      (when-let* ((bg (my/default-background-color frame)))
+        (let* ((is-light (my-theme-is-light-p bg))
+               (body-bg (my-adjust-color bg (if is-light -0.08 0.08)))
+               (border-bg (my-adjust-color bg (if is-light -0.24 0.24))))
+          (when body-bg
+            (set-face-attribute 'eldoc-box-body nil :background body-bg)
+            (setf (alist-get 'background-color eldoc-box-frame-parameters) body-bg))
+          (when border-bg
+            (set-face-attribute 'eldoc-box-border nil :background border-bg)
+            (setf (alist-get 'border-color eldoc-box-frame-parameters) border-bg))
+          (when (and (boundp 'eldoc-box--frame)
+                     (frame-live-p eldoc-box--frame))
+            (set-frame-parameter eldoc-box--frame 'background-color body-bg)
+            (set-frame-parameter eldoc-box--frame 'border-color border-bg)
+            (set-frame-parameter eldoc-box--frame
+                                 'undecorated
+                                 t)
+            (set-face-attribute 'default eldoc-box--frame :background body-bg))))))
 
   ;; Hook into theme changes
   (add-hook 'enable-theme-functions #'my-adjust-eldoc-box)
