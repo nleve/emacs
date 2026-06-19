@@ -302,6 +302,7 @@
 (use-package evil
   :init
   (setq evil-normal-state-cursor t
+        evil-insert-state-cursor 'bar
         evil-motion-state-cursor t
         evil-visual-state-cursor t
         evil-emacs-state-cursor t)
