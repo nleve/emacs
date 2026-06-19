@@ -478,8 +478,8 @@
   :config
   (require 'color)
 
-  (setf (alist-get 'internal-border-width eldoc-box-frame-parameters) 3
-        (alist-get 'child-frame-border-width eldoc-box-frame-parameters) 3)
+  (setf (alist-get 'internal-border-width eldoc-box-frame-parameters) 1
+        (alist-get 'child-frame-border-width eldoc-box-frame-parameters) 1)
 
   (defun my/color-rgb (color)
     "Return RGB components for COLOR, or nil if COLOR is not usable."
